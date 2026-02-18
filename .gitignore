@@ -1,0 +1,51 @@
+# ─── Dependencias ─────────────────────────────────────────────
+node_modules/
+
+# ─── Build / compilado ────────────────────────────────────────
+dist/
+build/
+*.js.map
+*.d.ts.map
+
+# ─── Secrets y configuración local ───────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── Claude Code (sesiones y memoria local) ───────────────────
+.claude/
+
+# ─── Archivos generados por el scraper ────────────────────────
+# Los .txt son las ordenanzas descargadas (datos, no código)
+*.txt
+# Directorios de años con ordenanzas scrapeadas
+[0-9][0-9][0-9][0-9]/
+undefined/
+
+# ─── Base de datos local / backups ────────────────────────────
+database/
+*.sql
+*.dump
+*.db
+*.sqlite
+
+# ─── Archivos de prueba con API keys hardcodeadas ─────────────
+test-glm.ts
+
+# ─── Artefactos de scraping / experimentos descartados ────────
+cosa.html
+cosa.js
+
+# ─── Drizzle migrations generadas (se regeneran con db:generate)
+# Comentar esta línea si querés versionar las migrations
+# drizzle/
+
+# ─── OS / Editor ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.rar
+*.zip
+
+# ─── Cache ────────────────────────────────────────────────────
+.cache/
+docs/
