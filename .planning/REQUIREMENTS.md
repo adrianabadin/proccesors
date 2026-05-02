@@ -26,7 +26,7 @@ Fix `src/mcp-server/embeddings.ts` so all `embeddings_cache` queries include `WH
 
 ---
 
-## SS-03: Semantic Search MCP Tool
+## SS-03: Semantic Search MCP Tool ✅
 
 **Priority:** Must
 **Phase:** 1
@@ -37,7 +37,7 @@ Create `src/mcp-server/tools/semantic-search.ts` implementing a new `semantic_se
 
 ---
 
-## SS-04: Tool Registration and Integration
+## SS-04: Tool Registration and Integration ✅
 
 **Priority:** Must
 **Phase:** 1

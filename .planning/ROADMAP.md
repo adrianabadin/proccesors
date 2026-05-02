@@ -16,8 +16,8 @@
 
 Plans:
 - [x] 01-01-PLAN.md — Fix embeddings infrastructure + batch embedding generation script
-- [ ] 01-02-PLAN.md — Create semantic_search MCP tool + register in server
+- [x] 01-02-PLAN.md — Create semantic_search MCP tool + register in server
 
-**Status:** ◐ In Progress
+**Status:** ✓ Complete (2026-05-02)
 
 ---

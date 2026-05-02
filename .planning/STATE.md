@@ -8,7 +8,7 @@
 ## Current Phase
 
 **Phase:** 1 — Semantic Search Implementation
-**Status:** In Progress — Plan 01 complete, Plan 02 next
+**Status:** Complete — Both plans done (01: embeddings fix + batch, 02: semantic_search tool)
 
 ## Decisions
 
@@ -19,6 +19,9 @@
 - New tool coexists with existing 12 tools, no replacements
 - Backward compat re-exports maintained in embeddings.ts for similar.ts consumers
 - p-limit chosen for batch script concurrency (simpler than worker pool for I/O-bound)
+- Query embedding ephemeral (not cached) in semantic_search to keep cache clean
+- solo_vigentes as post-filter on results, simpler than DB filter for in-memory approach
+- Model hard-coded in semantic_search (T-01-07: prevents dimension mismatch attacks)
 
 ## Blockers
 
@@ -27,4 +30,8 @@ None.
 ## Todos
 
 - Run batch embedding script to populate embeddings_cache with text-embedding-3-large vectors
-- Implement semantic_search MCP tool (Plan 02)
+
+## Session
+
+- **Last session:** 2026-05-02T19:05:47Z — Completed 01-02-PLAN.md
+- **Stopped at:** Phase 1 complete
