@@ -313,6 +313,18 @@ export const SummarizeTextoOutputSchema = z.object({
 
 export type SummarizeTextoOutput = z.infer<typeof SummarizeTextoOutputSchema>;
 
+// semantic_search
+export const SemanticSearchInputSchema = z.object({
+  query: z.string().min(1).describe(
+    "Consulta en lenguaje natural. Ejemplo: 'ordenanzas sobre habilitación de comercios nocturnos'"
+  ),
+  limit: z.number().min(1).max(50).optional().default(10),
+  umbral: z.number().min(0).max(1).optional().default(0.7),
+  solo_vigentes: z.boolean().optional().default(false),
+});
+
+export type SemanticSearchInput = z.infer<typeof SemanticSearchInputSchema>;
+
 // health_check
 export const HealthCheckInputSchema = z.object({});
 
