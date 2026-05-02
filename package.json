@@ -9,6 +9,7 @@
     "scrape:playwright": "npx tsx src/scraper/scraper-playwright.ts"
   },
   "dependencies": {
+    "@lancedb/lancedb": "^0.27.2",
     "@modelcontextprotocol/sdk": "^1.26.0",
     "axios": "^1.13.5",
     "dotenv": "^17.3.1",

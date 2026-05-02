@@ -1,13 +1,10 @@
 import * as z from "zod/v4";
 import { SemanticSearchInputSchema, OrdenanzaSimilarSchema } from "../types.js";
-import { generateEmbeddingForModel, getEmbeddingsForSimilarity } from "../embeddings.js";
-import { cosineSimilarity, parseVector, toolLogger } from "../utils.js";
+import { generateEmbeddingForModel } from "../embeddings.js";
+import { searchSimilar, SearchResult } from "../vector-store.js";
+import { toolLogger } from "../utils.js";
 
 const MODEL = "text-embedding-3-large" as const;
-
-// =============================================================================
-// TOOL: semantic_search
-// =============================================================================
 
 export const semanticSearchTool = {
   name: "semantic_search",
@@ -23,72 +20,48 @@ export const semanticSearchTool = {
 
 export async function semanticSearchHandler(
   args: z.infer<typeof SemanticSearchInputSchema>,
-  ctx: any
+  _ctx: any,
 ): Promise<any> {
   const log = toolLogger("semantic_search");
 
   try {
     log.info("Semantic search", { query: args.query, limit: args.limit, umbral: args.umbral });
 
-    // 1. Generate query embedding (NOT cached — ephemeral)
+    // 1. Generate query embedding (OpenAI API call, ~1.5s)
     const queryEmbedding = await generateEmbeddingForModel(args.query, MODEL);
 
-    // 2. Load embeddings (lightweight query — no category JOINs)
-    const allEmbeddings = await getEmbeddingsForSimilarity(MODEL);
+    // 2. Search LanceDB local (< 100ms for 2778 vectors)
+    const results = await searchSimilar(
+      queryEmbedding,
+      args.limit,
+      args.umbral,
+    );
 
-    if (allEmbeddings.length === 0) {
+    if (results.length === 0) {
       return {
         content: [{
           type: "text",
           text: JSON.stringify({
-            error: "No hay embeddings pre-generados para el modelo text-embedding-3-large. Ejecuta el script de generación batch primero (npx tsx src/processor/generate-embeddings.ts).",
+            error: "No se encontraron resultados. Ejecuta 'npx tsx src/processor/sync-vectors.ts' para sincronizar los embeddings a LanceDB local.",
             modelo: MODEL,
+            hint: "Asegurate de haber corrido el script de sync después de generar los embeddings.",
           }),
         }],
         isError: true,
       };
     }
 
-    log.debug("Comparing embeddings", { total: allEmbeddings.length, query_dims: queryEmbedding.length });
+    // 3. Post-filter solo_vigentes on results
+    const filtered = args.solo_vigentes
+      ? results.filter(r => r.estado === "vigente" || r.estado === "modificada")
+      : results;
 
-    // 3. Single pass: parse each vector once, compute similarity once, track totalAboveThreshold
-    let totalAboveThreshold = 0;
-
-    const scored = new Array<{ ordenanza_id: string; numero: number; anio: number; titulo: string; resumen: string; estado: string; score: number }>(allEmbeddings.length);
-
-    for (let i = 0; i < allEmbeddings.length; i++) {
-      const emb = allEmbeddings[i];
-      const vector = parseVector(emb.vector);
-      const score = cosineSimilarity(queryEmbedding, vector);
-
-      if (score >= args.umbral) {
-        totalAboveThreshold++;
-      }
-
-      scored[i] = {
-        ordenanza_id: emb.ordenanza_id,
-        numero: emb.numero,
-        anio: emb.anio,
-        titulo: emb.titulo,
-        resumen: emb.resumen ?? "",
-        estado: emb.estado,
-        score,
-      };
-    }
-
-    // 4. Filter, sort, and limit
-    const results = scored
-      .filter((r) => r.score >= args.umbral)
-      .filter((r) => !args.solo_vigentes || r.estado === "vigente" || r.estado === "modificada")
-      .sort((a, b) => b.score - a.score)
-      .slice(0, args.limit);
-
-    // 5. Remove estado from output (match OrdenanzaSimilarSchema shape)
-    const output = results.map(({ estado, ...rest }) => rest);
+    // 4. Format output (match OrdenanzaSimilarSchema shape)
+    const output = filtered.map(({ estado, ...rest }) => rest);
 
     log.info("Semantic search complete", {
       results: output.length,
-      total_above_threshold: totalAboveThreshold,
+      total_found: results.length,
     });
 
     return {
@@ -97,7 +70,6 @@ export async function semanticSearchHandler(
         text: JSON.stringify({
           resultados: output,
           total: output.length,
-          total_above_threshold: totalAboveThreshold,
           query: args.query,
           modelo: MODEL,
           umbral: args.umbral,

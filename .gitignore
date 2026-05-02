@@ -11,6 +11,7 @@ build/
 .env
 .env.local
 .env.*.local
+.mcp.json
 
 # ─── Claude Code (sesiones y memoria local) ───────────────────
 .claude/
@@ -48,4 +49,9 @@ Thumbs.db
 
 # ─── Cache ────────────────────────────────────────────────────
 .cache/
+.lancedb/
+
+# ─── Benchmarks / Tests temporales ─────────────────────────────
+bench-semantic.ts
+test-lancedb.ts
 docs/
