@@ -18,13 +18,17 @@ Un asistente de IA puede encontrar ordenanzas relevantes describiendo un concept
 - ✓ Ordenanzas con `resumen` y `palabras_clave` pre-generados en DB — existente
 - ✓ Cliente OpenAI configurado y funcional — existente
 
+### Validated in Phase 1: Semantic Search Implementation
+
+- ✓ Script batch para generar embeddings `text-embedding-3-large` para todas las ordenanzas
+- ✓ Selección inteligente de texto: texto completo para ordenanzas cortas, resumen para muy largas
+- ✓ Rate limiting y progreso visible en el script batch
+- ✓ Nueva herramienta MCP `semantic_search` que busca por texto libre
+- ✓ Búsqueda semántica retorna ordenanzas con score de similitud
+
 ### Active
 
-- [ ] Script batch para generar embeddings `text-embedding-3-large` para todas las ordenanzas
-- [ ] Selección inteligente de texto: texto completo para ordenanzas cortas, resumen para muy largas
-- [ ] Rate limiting y progreso visible en el script batch
-- [ ] Nueva herramienta MCP `semantic_search` que busca por texto libre
-- [ ] Búsqueda semántica retorna ordenanzas con score de similitud
+None — all requirements satisfied.
 
 ### Out of Scope
 
@@ -53,10 +57,10 @@ Un asistente de IA puede encontrar ordenanzas relevantes describiendo un concept
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| `text-embedding-3-large` en lugar de `small` | Mayor calidad semántica para búsqueda por concepto | — Pending |
-| Texto completo para cortas, resumen para largas | Los resúmenes ya existen; para textos muy largos el embedding del resumen es más representativo | — Pending |
-| Nueva herramienta `semantic_search` (no reemplazar `similar_ordenanzas`) | Casos de uso distintos: `similar` busca por ordenanza, `semantic_search` busca por texto libre | — Pending |
-| Cosine similarity en memoria (sin pgvector) | Evita dependencia de extensión PostgreSQL que puede no estar disponible en el VPS | — Pending |
+| `text-embedding-3-large` en lugar de `small` | Mayor calidad semántica para búsqueda por concepto | ✓ Implemented in Phase 1 |
+| Texto completo para cortas, resumen para largas | Los resúmenes ya existen; para textos muy largos el embedding del resumen es más representativo | ✓ Implemented in Phase 1 |
+| Nueva herramienta `semantic_search` (no reemplazar `similar_ordenanzas`) | Casos de uso distintos: `similar` busca por ordenanza, `semantic_search` busca por texto libre | ✓ Implemented in Phase 1 |
+| Cosine similarity en memoria (sin pgvector) | Evita dependencia de extensión PostgreSQL que puede no estar disponible en el VPS | ✓ Implemented in Phase 1 |
 
 ---
-*Last updated: 2026-05-02 after initialization*
+*Last updated: 2026-05-02 after Phase 1 completion*
