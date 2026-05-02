@@ -325,6 +325,18 @@ export const SemanticSearchInputSchema = z.object({
 
 export type SemanticSearchInput = z.infer<typeof SemanticSearchInputSchema>;
 
+// semantic_search_articulos
+export const ArticuloSemanticSearchInputSchema = z.object({
+  query: z.string().min(1).describe(
+    "Consulta en lenguaje natural. Ejemplo: 'artículos que hablen sobre excepciones a la altura máxima de edificación'"
+  ),
+  limit: z.number().min(1).max(50).optional().default(10),
+  umbral: z.number().min(0).max(1).optional().default(0.7),
+  solo_vigentes: z.boolean().optional().default(false),
+});
+
+export type ArticuloSemanticSearchInput = z.infer<typeof ArticuloSemanticSearchInputSchema>;
+
 // health_check
 export const HealthCheckInputSchema = z.object({});
 

@@ -36,6 +36,7 @@ import { healthCheckTool, healthCheckHandler } from "./health.js";
 
 // Imports de tools de búsqueda semántica (AI)
 import { semanticSearchTool, semanticSearchHandler } from "./semantic-search.js";
+import { semanticSearchArticulosTool, semanticSearchArticulosHandler } from "./semantic-search-articulos.js";
 
 // Re-exportar para uso directo si se necesita
 export {
@@ -52,6 +53,7 @@ export {
   summarizeTextoTool, summarizeTextoHandler,
   healthCheckTool, healthCheckHandler,
   semanticSearchTool, semanticSearchHandler,
+  semanticSearchArticulosTool, semanticSearchArticulosHandler,
 };
 
 /**
@@ -89,6 +91,7 @@ export const ALL_TOOLS = [
   // Health check (1)
   { tool: healthCheckTool, handler: healthCheckHandler },
 
-  // Búsqueda semántica (1)
+  // Búsqueda semántica (2)
   { tool: semanticSearchTool, handler: semanticSearchHandler },
+  { tool: semanticSearchArticulosTool, handler: semanticSearchArticulosHandler },
 ];
