@@ -184,7 +184,7 @@ export async function generateEmbeddingForModel(
 }
 
 /**
- * Obtiene todos los embeddings para un modelo específico
+ * Obtiene todos los embeddings para un modelo específico (with categories — used by similar_ordenanzas)
  */
 export async function getAllEmbeddingsByModel(
   model: "text-embedding-3-small" | "text-embedding-3-large"
@@ -198,6 +198,24 @@ export async function getAllEmbeddingsByModel(
      LEFT JOIN categorias c ON oc.categoria_id = c.id
      WHERE ec.modelo = $1
      GROUP BY ec.ordenanza_id, ec.vector, o.numero, o.anio, o.titulo, o.resumen, o.estado`,
+    [model]
+  );
+  return rows;
+}
+
+/**
+ * Lightweight query: loads embeddings for similarity search WITHOUT category JOINs.
+ * Used by semantic_search for the similarity computation pass.
+ * Categories can be fetched later for just the top-N results if needed.
+ */
+export async function getEmbeddingsForSimilarity(
+  model: "text-embedding-3-small" | "text-embedding-3-large"
+): Promise<Array<{ ordenanza_id: string; vector: string; numero: number; anio: number; titulo: string; resumen: string; estado: string }>> {
+  const rows = await query(
+    `SELECT ec.ordenanza_id, ec.vector, o.numero, o.anio, o.titulo, o.resumen, o.estado
+     FROM embeddings_cache ec
+     JOIN ordenanzas o ON o.id = ec.ordenanza_id
+     WHERE ec.modelo = $1`,
     [model]
   );
   return rows;

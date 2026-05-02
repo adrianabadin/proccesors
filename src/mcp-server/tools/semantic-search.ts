@@ -1,6 +1,6 @@
 import * as z from "zod/v4";
 import { SemanticSearchInputSchema, OrdenanzaSimilarSchema } from "../types.js";
-import { generateEmbeddingForModel, getAllEmbeddingsByModel } from "../embeddings.js";
+import { generateEmbeddingForModel, getEmbeddingsForSimilarity } from "../embeddings.js";
 import { cosineSimilarity, parseVector, toolLogger } from "../utils.js";
 
 const MODEL = "text-embedding-3-large" as const;
@@ -33,8 +33,8 @@ export async function semanticSearchHandler(
     // 1. Generate query embedding (NOT cached — ephemeral)
     const queryEmbedding = await generateEmbeddingForModel(args.query, MODEL);
 
-    // 2. Load all pre-generated large embeddings
-    const allEmbeddings = await getAllEmbeddingsByModel(MODEL);
+    // 2. Load embeddings (lightweight query — no category JOINs)
+    const allEmbeddings = await getEmbeddingsForSimilarity(MODEL);
 
     if (allEmbeddings.length === 0) {
       return {
@@ -51,38 +51,43 @@ export async function semanticSearchHandler(
 
     log.debug("Comparing embeddings", { total: allEmbeddings.length, query_dims: queryEmbedding.length });
 
-    // 3. Compute cosine similarity for each
-    const results = allEmbeddings
-      .map((emb) => {
-        const vector = parseVector(emb.vector);
-        const score = cosineSimilarity(queryEmbedding, vector);
-        return {
-          id: emb.ordenanza_id,
-          numero: emb.numero,
-          anio: emb.anio,
-          titulo: emb.titulo,
-          resumen: emb.resumen ?? "",
-          estado: emb.estado,
-          score,
-          categorias: emb.categorias ? JSON.parse(emb.categorias) : [],
-        };
-      })
-      // 4. Filter by threshold
-      .filter((r) => r.score >= args.umbral)
-      // 5. Optional: solo_vigentes post-filter
-      .filter((r) => !args.solo_vigentes || r.estado === "vigente" || r.estado === "modificada")
-      // 6. Sort by score desc, slice to limit
-      .sort((a, b) => b.score - a.score)
-      .slice(0, args.limit)
-      // 7. Remove estado from output (match OrdenanzaSimilarSchema shape)
-      .map(({ estado, ...rest }) => rest);
+    // 3. Single pass: parse each vector once, compute similarity once, track totalAboveThreshold
+    let totalAboveThreshold = 0;
 
-    const totalAboveThreshold = allEmbeddings
-      .map((emb) => cosineSimilarity(queryEmbedding, parseVector(emb.vector)))
-      .filter((s) => s >= args.umbral).length;
+    const scored = new Array<{ ordenanza_id: string; numero: number; anio: number; titulo: string; resumen: string; estado: string; score: number }>(allEmbeddings.length);
+
+    for (let i = 0; i < allEmbeddings.length; i++) {
+      const emb = allEmbeddings[i];
+      const vector = parseVector(emb.vector);
+      const score = cosineSimilarity(queryEmbedding, vector);
+
+      if (score >= args.umbral) {
+        totalAboveThreshold++;
+      }
+
+      scored[i] = {
+        ordenanza_id: emb.ordenanza_id,
+        numero: emb.numero,
+        anio: emb.anio,
+        titulo: emb.titulo,
+        resumen: emb.resumen ?? "",
+        estado: emb.estado,
+        score,
+      };
+    }
+
+    // 4. Filter, sort, and limit
+    const results = scored
+      .filter((r) => r.score >= args.umbral)
+      .filter((r) => !args.solo_vigentes || r.estado === "vigente" || r.estado === "modificada")
+      .sort((a, b) => b.score - a.score)
+      .slice(0, args.limit);
+
+    // 5. Remove estado from output (match OrdenanzaSimilarSchema shape)
+    const output = results.map(({ estado, ...rest }) => rest);
 
     log.info("Semantic search complete", {
-      results: results.length,
+      results: output.length,
       total_above_threshold: totalAboveThreshold,
     });
 
@@ -90,8 +95,8 @@ export async function semanticSearchHandler(
       content: [{
         type: "text",
         text: JSON.stringify({
-          resultados: results,
-          total: results.length,
+          resultados: output,
+          total: output.length,
           total_above_threshold: totalAboveThreshold,
           query: args.query,
           modelo: MODEL,
