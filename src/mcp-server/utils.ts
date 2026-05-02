@@ -115,7 +115,9 @@ export function cosineSimilarity(vecA: number[], vecB: number[]): number {
     normB += vecB[i] * vecB[i];
   }
 
-  const similarity = dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  if (denom === 0) return 0;
+  const similarity = dotProduct / denom;
   return similarity;
 }
 

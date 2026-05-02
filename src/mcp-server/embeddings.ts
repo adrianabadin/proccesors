@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import "dotenv/config";
 import { logger } from "./logger.js";
 import { query, execute } from "./db.js";
-import { parseVector, formatVector } from "./utils.js";
+import { parseVector, formatVector, cosineSimilarity } from "./utils.js";
 
 const apiKey = process.env.OPENAI_API_KEY;
 
@@ -86,35 +86,35 @@ export async function getOrCreateEmbedding(
 ): Promise<number[]> {
   const toolLog = logger.child({ tool: "embeddings" });
 
-  // 1. Buscar en cache
+  // 1. Buscar en cache (filtered by model)
   const cached = await query(
-    `SELECT vector FROM embeddings_cache WHERE ordenanza_id = $1`,
-    [ordenanzaId]
+    `SELECT vector FROM embeddings_cache WHERE ordenanza_id = $1 AND modelo = $2`,
+    [ordenanzaId, EMBEDDING_MODEL]
   );
 
   if (cached.length > 0) {
-    toolLog.debug({ ordenanzaId }, "Embedding found in cache");
+    toolLog.debug({ ordenanzaId, model: EMBEDDING_MODEL }, "Embedding found in cache");
     return parseVector(cached[0].vector);
   }
 
   // 2. Generar nuevo embedding
-  toolLog.info({ ordenanzaId }, "Generating new embedding...");
+  toolLog.info({ ordenanzaId, model: EMBEDDING_MODEL }, "Generating new embedding...");
 
   const embedding = await generateEmbedding(textoCompleto);
 
-  // 3. Guardar en cache
+  // 3. Guardar en cache (with modelo)
   await execute(
     `
-    INSERT INTO embeddings_cache (ordenanza_id, vector, dimensions)
-    VALUES ($1, $2, $3)
+    INSERT INTO embeddings_cache (ordenanza_id, modelo, vector, dimensions)
+    VALUES ($1, $2, $3, $4)
     ON CONFLICT (ordenanza_id, modelo) DO UPDATE SET
       vector = EXCLUDED.vector,
       updated_at = NOW()
     `,
-    [ordenanzaId, formatVector(embedding), EMBEDDING_DIMENSIONS.toString()]
+    [ordenanzaId, EMBEDDING_MODEL, formatVector(embedding), EMBEDDING_DIMENSIONS.toString()]
   );
 
-  toolLog.info({ ordenanzaId }, "Embedding cached");
+  toolLog.info({ ordenanzaId, model: EMBEDDING_MODEL }, "Embedding cached");
 
   return embedding;
 }
@@ -125,7 +125,7 @@ export async function getOrCreateEmbedding(
  * @returns Array de { id, vector } para calcular similitudes
  */
 export async function getAllEmbeddingsForSimilarity(): Promise<
-  Array<{ id: string; ordenanza_id: string; vector: string }>
+  Array<{ id: string; ordenanza_id: string; vector: string; numero: number; anio: number; titulo: string; resumen: string; categorias?: string }>
 > {
   const toolLog = logger.child({ tool: "embeddings" });
 
@@ -134,17 +134,15 @@ export async function getAllEmbeddingsForSimilarity(): Promise<
     SELECT ec.id, ec.ordenanza_id, ec.vector, o.numero, o.anio, o.titulo, o.resumen
     FROM embeddings_cache ec
     JOIN ordenanzas o ON o.id = ec.ordenanza_id
+    WHERE ec.modelo = $1
     ORDER BY ec.created_at DESC
-    `
+    `,
+    [EMBEDDING_MODEL]
   );
 
-  toolLog.debug({ count: rows.length }, "Loaded embeddings for similarity");
+  toolLog.debug({ count: rows.length, model: EMBEDDING_MODEL }, "Loaded embeddings for similarity");
 
-  return rows.map((row) => ({
-    id: row.id,
-    ordenanza_id: row.ordenanza_id,
-    vector: row.vector,
-  }));
+  return rows;
 }
 
 /**
@@ -154,8 +152,8 @@ export async function getEmbedding(
   ordenanzaId: string
 ): Promise<number[] | null> {
   const cached = await query(
-    `SELECT vector FROM embeddings_cache WHERE ordenanza_id = $1`,
-    [ordenanzaId]
+    `SELECT vector FROM embeddings_cache WHERE ordenanza_id = $1 AND modelo = $2`,
+    [ordenanzaId, EMBEDDING_MODEL]
   );
 
   if (cached.length === 0) {
@@ -165,102 +163,44 @@ export async function getEmbedding(
   return parseVector(cached[0].vector);
 }
 
+// Re-export from utils for backward compatibility
+export { parseVector, formatVector, cosineSimilarity } from "./utils.js";
+
+// Keep aliases for backward compat
+export const calculateCosineSimilarity = cosineSimilarity;
+export const parseEmbeddingVector = parseVector;
+export const formatEmbeddingVector = formatVector;
+
 /**
- * Calcula cosine similarity entre dos vectores
- * Utilizado para búsqueda semántica cuando pgvector no está disponible
+ * Genera embedding para un texto usando un modelo específico
  */
-export function calculateCosineSimilarity(vecA: number[], vecB: number[]): number {
-  if (vecA.length !== vecB.length) {
-    throw new Error("Vectors must have the same length");
-  }
-
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-
-  for (let i = 0; i < vecA.length; i++) {
-    dotProduct += vecA[i] * vecB[i];
-    normA += vecA[i] * vecA[i];
-    normB += vecB[i] * vecB[i];
-  }
-
-  const similarity = dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-  return similarity;
+export async function generateEmbeddingForModel(
+  text: string,
+  model: "text-embedding-3-small" | "text-embedding-3-large"
+): Promise<number[]> {
+  if (!openai) throw new Error("OpenAI client no configurado");
+  const response = await openai.embeddings.create({ model, input: text });
+  return response.data[0].embedding;
 }
 
 /**
- * Parsea un vector almacenado como JSON string a array de números
+ * Obtiene todos los embeddings para un modelo específico
  */
-export function parseEmbeddingVector(vectorStr: string): number[] {
-  try {
-    const parsed = JSON.parse(vectorStr);
-    if (!Array.isArray(parsed)) {
-      throw new Error("Vector is not an array");
-    }
-    return parsed;
-  } catch (error) {
-    logger.error(
-      { vectorStr, error },
-      "Failed to parse vector from string"
-    );
-    throw new Error(`Invalid vector format: ${vectorStr}`);
-  }
-}
-
-/**
- * Formatea un array de números a JSON string
- */
-export function formatEmbeddingVector(vector: number[]): string {
-  return JSON.stringify(vector);
-}
-
-/**
- * Calcula cosine similarity entre dos vectores
- * Utilizado para búsqueda semántica cuando pgvector no está disponible
- */
-export function cosineSimilarity(vecA: number[], vecB: number[]): number {
-  if (vecA.length !== vecB.length) {
-    throw new Error("Vectors must have the same length");
-  }
-
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-
-  for (let i = 0; i < vecA.length; i++) {
-    dotProduct += vecA[i] * vecB[i];
-    normA += vecA[i] * vecA[i];
-    normB += vecB[i] * vecB[i];
-  }
-
-  const similarity = dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-  return similarity;
-}
-
-/**
- * Parsea un vector almacenado como JSON string a array de números
- */
-export function parseVector(vectorStr: string): number[] {
-  try {
-    const parsed = JSON.parse(vectorStr);
-    if (!Array.isArray(parsed)) {
-      throw new Error("Vector is not an array");
-    }
-    return parsed;
-  } catch (error) {
-    logger.error(
-      { vectorStr, error },
-      "Failed to parse vector from string"
-    );
-    throw new Error(`Invalid vector format: ${vectorStr}`);
-  }
-}
-
-/**
- * Formatea un array de números a JSON string
- */
-export function formatVector(vector: number[]): string {
-  return JSON.stringify(vector);
+export async function getAllEmbeddingsByModel(
+  model: "text-embedding-3-small" | "text-embedding-3-large"
+): Promise<Array<{ ordenanza_id: string; vector: string; numero: number; anio: number; titulo: string; resumen: string; estado: string; categorias: string | null }>> {
+  const rows = await query(
+    `SELECT ec.ordenanza_id, ec.vector, o.numero, o.anio, o.titulo, o.resumen, o.estado,
+       COALESCE(jsonb_agg(jsonb_build_object('nombre', c.nombre, 'slug', c.slug, 'relevancia', oc.relevancia)), '[]'::jsonb)::text as categorias
+     FROM embeddings_cache ec
+     JOIN ordenanzas o ON o.id = ec.ordenanza_id
+     LEFT JOIN ordenanza_categorias oc ON o.id = oc.ordenanza_id
+     LEFT JOIN categorias c ON oc.categoria_id = c.id
+     WHERE ec.modelo = $1
+     GROUP BY ec.ordenanza_id, ec.vector, o.numero, o.anio, o.titulo, o.resumen, o.estado`,
+    [model]
+  );
+  return rows;
 }
 
 /**
