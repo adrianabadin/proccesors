@@ -8,7 +8,7 @@
 ## Current Phase
 
 **Phase:** 1 — Semantic Search Implementation
-**Status:** Planning
+**Status:** In Progress — Plan 01 complete, Plan 02 next
 
 ## Decisions
 
@@ -17,6 +17,8 @@
 - Similarity: cosine similarity in memory (no pgvector)
 - Batch script: standalone, resumable via DB-as-checkpoint pattern
 - New tool coexists with existing 12 tools, no replacements
+- Backward compat re-exports maintained in embeddings.ts for similar.ts consumers
+- p-limit chosen for batch script concurrency (simpler than worker pool for I/O-bound)
 
 ## Blockers
 
@@ -24,4 +26,5 @@ None.
 
 ## Todos
 
-None.
+- Run batch embedding script to populate embeddings_cache with text-embedding-3-large vectors
+- Implement semantic_search MCP tool (Plan 02)

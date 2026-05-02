@@ -4,7 +4,7 @@
 
 ---
 
-## SS-01: Batch Embedding Generation Script
+## SS-01: Batch Embedding Generation Script ✅
 
 **Priority:** Must
 **Phase:** 1
@@ -15,7 +15,7 @@ Create a standalone batch script (`src/processor/generate-embeddings.ts`) that g
 
 ---
 
-## SS-02: Fix Embeddings Module Model Filter
+## SS-02: Fix Embeddings Module Model Filter ✅
 
 **Priority:** Must
 **Phase:** 1
@@ -48,7 +48,7 @@ Add `SemanticSearchInputSchema` to `src/mcp-server/types.ts`. Register the new t
 
 ---
 
-## SS-05: Data Quality Validation in Batch Script
+## SS-05: Data Quality Validation in Batch Script ✅
 
 **Priority:** Should
 **Phase:** 1
