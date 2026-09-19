@@ -36,6 +36,7 @@ export async function searchByEntityHandler(
       params.push(args.tipo);
     }
 
+    params.push(args.limit);
     const rows = await query(`
       SELECT DISTINCT
         o.id, o.numero, o.anio, o.titulo, o.resumen, o.estado,
@@ -45,7 +46,7 @@ export async function searchByEntityHandler(
       JOIN ordenanzas o ON o.id = oe.ordenanza_id
       WHERE ${whereClause}
       ORDER BY o.anio DESC, o.numero DESC
-      LIMIT $${params.length + 1}
+      LIMIT $${params.length}
     `, params);
 
     const formatted = rows.map((row: any) => ({

@@ -107,10 +107,12 @@ export async function getOrdenanzaHandler(
     // Cargar referencias
     const referencias = await query(
       `
-      SELECT 
-        id, direccion, tipo,
-        ordenanza_relacionada_id, numero, anio, titulo,
-        norma_externa, articulos_afectados, notas
+      SELECT
+        id, tipo,
+        ordenanza_destino_id as ordenanza_relacionada_id,
+        norma_externa_tipo as norma_externa_tipo,
+        norma_externa_referencia as norma_externa_referencia,
+        articulos_afectados, notas
       FROM referencias_normativas
       WHERE ordenanza_origen_id = $1
       `,
@@ -168,13 +170,11 @@ export async function getOrdenanzaHandler(
       })),
       referencias: referencias.map((r) => ({
         id: r.id,
-        direccion: r.direccion,
         tipo: r.tipo,
         ordenanza_relacionada_id: r.ordenanza_relacionada_id || undefined,
-        numero: r.numero || undefined,
-        anio: r.anio || undefined,
-        titulo: r.titulo || undefined,
-        norma_externa: r.norma_externa || undefined,
+        norma_externa: r.norma_externa_tipo && r.norma_externa_referencia
+          ? `${r.norma_externa_tipo} ${r.norma_externa_referencia}`
+          : undefined,
         articulos_afectados: r.articulos_afectados || undefined,
         notas: r.notas || undefined,
       })),

@@ -1,0 +1,10 @@
+
+# PMC (Project Memory Context)
+.planning/project-memory-context/enrichment/
+.planning/project-memory-context/intake/
+.planning/project-memory-context/graph/graph.db
+.planning/project-memory-context/graph/graph.db-shm
+.planning/project-memory-context/graph/graph.db-wal
+.planning/pmc
+.planning/planning
+graphify-out/

@@ -12,24 +12,31 @@ import "dotenv/config";
 const isVerbose = process.env.VERBOSE === "true" || process.env.NODE_ENV === "development";
 const logLevel = process.env.LOG_LEVEL || "info";
 
-export const logger = pino({
+const pinoOptions = {
   level: logLevel,
   formatters: {
     level(label: string) {
       return { level: label };
     },
   },
-  transport: isVerbose
-    ? {
+};
+
+// MCP stdio usa stdout para el protocolo JSON-RPC.
+// Los logs DEBEN ir a stderr para no corromper la comunicación.
+export const logger = isVerbose
+  ? pino({
+      ...pinoOptions,
+      transport: {
         target: "pino-pretty",
         options: {
           colorize: true,
           translateTime: "SYS:standard",
           singleLine: false,
+          destination: 2, // fd 2 = stderr
         },
-      }
-    : undefined,
-});
+      },
+    })
+  : pino(pinoOptions, process.stderr);
 
 /**
  * Wrapper para logging de herramientas MCP

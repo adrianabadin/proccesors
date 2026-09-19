@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "sibom-mcp": {
+      "command": "python",
+      "args": [
+        "-m",
+        "sibom_mcp"
+      ],
+      "cwd": "C:/Users/aabad/Documents/CODE/ordenanzas/sibom/mcp-server",
+      "env": {
+        "SIBOM_DB_PATH": "C:/Users/aabad/Documents/CODE/ordenanzas/sibom/sibom.db",
+        "SIBOM_INDEX_DB_PATH": "C:/Users/aabad/Documents/CODE/ordenanzas/sibom/mcp-server/data/sibom-index.db",
+        "SIBOM_ANEXOS_DIR": "C:/Users/aabad/Documents/CODE/ordenanzas/sibom/anexos",
+        "GROQ_API_KEY": ""
+      }
+    }
+  }
+}

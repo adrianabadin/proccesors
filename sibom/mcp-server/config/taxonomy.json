@@ -1,0 +1,157 @@
+{
+  "version": "1.0.0",
+  "descripcion": "Taxonomía oficial de clasificación temática para ordenanzas municipales SIBOM",
+  "categories": [
+    {
+      "nombre": "Presupuesto y Hacienda",
+      "slug": "presupuesto-hacienda",
+      "descripcion": "Presupuesto general, cálculo de recursos, ordenanza complementaria, modificaciones presupuestarias",
+      "subcategories": [
+        {"nombre": "Presupuesto General de Gastos y Recursos", "slug": "presupuesto-general", "descripcion": "Aprobación del presupuesto anual"},
+        {"nombre": "Modificaciones Presupuestarias", "slug": "modif-presupuestarias", "descripcion": "Ampliaciones y transferencias de partidas"},
+        {"nombre": "Planes de Pago y Regularización", "slug": "planes-pago", "descripcion": "Moratorias, facilidades de pago, regularización de deudas"},
+        {"nombre": "Deuda Municipal", "slug": "deuda-municipal", "descripcion": "Reconocimiento de deudas y empréstitos"}
+      ]
+    },
+    {
+      "nombre": "Tasas, Tarifas y Tributos",
+      "slug": "tasas-tarifas-tributos",
+      "descripcion": "Tasas municipales, tarifas de servicios, régimen impositivo, exenciones fiscales",
+      "subcategories": [
+        {"nombre": "Tasas por Servicios Urbanos", "slug": "tasas-serv-urbanos", "descripcion": "Alumbrado, barrido, limpieza"},
+        {"nombre": "Tasas por Servicios Sanitarios", "slug": "tasas-serv-sanitarios", "descripcion": "Agua, cloacas"},
+        {"nombre": "Tasa de Seguridad e Higiene", "slug": "tasa-seg-higiene", "descripcion": "Inspección comercial"},
+        {"nombre": "Derecho de Cementerio", "slug": "derecho-cementerio", "descripcion": "Tasas cementeriales"},
+        {"nombre": "Tarifas Eléctricas", "slug": "tarifas-electricas", "descripcion": "Cuadros tarifarios de energía"},
+        {"nombre": "Exenciones y Beneficios Fiscales", "slug": "exenciones-fiscales", "descripcion": "Condonaciones, exenciones, descuentos tributarios"},
+        {"nombre": "Red Vial Municipal", "slug": "red-vial-tasa", "descripcion": "Tasa de conservación y mejorado de caminos"}
+      ]
+    },
+    {
+      "nombre": "Personal Municipal",
+      "slug": "personal-municipal",
+      "descripcion": "Escalas salariales, bonificaciones, estatuto del empleado, concursos, designaciones",
+      "subcategories": [
+        {"nombre": "Escalas Salariales", "slug": "escalas-salariales", "descripcion": "Sueldos básicos, bonificaciones, adicionales"},
+        {"nombre": "Estatuto del Personal", "slug": "estatuto-personal", "descripcion": "Régimen de empleo público municipal"},
+        {"nombre": "Anticipos y Pagos Extraordinarios", "slug": "anticipos-pagos", "descripcion": "Anticipos salariales, bonos extraordinarios"}
+      ]
+    },
+    {
+      "nombre": "Obras Públicas e Infraestructura",
+      "slug": "obras-publicas",
+      "descripcion": "Obras viales, pavimentación, infraestructura urbana, licitaciones de obra",
+      "subcategories": [
+        {"nombre": "Pavimentación y Vialidad", "slug": "pavimentacion-vialidad", "descripcion": "Obras de pavimento, cordón cuneta, ciclovías"},
+        {"nombre": "Infraestructura Hidráulica", "slug": "infra-hidraulica", "descripcion": "Desagües pluviales, obras sanitarias"},
+        {"nombre": "Edificios Públicos", "slug": "edificios-publicos", "descripcion": "Construcción y remodelación de edificios municipales"}
+      ]
+    },
+    {
+      "nombre": "Urbanismo y Uso del Suelo",
+      "slug": "urbanismo-suelo",
+      "descripcion": "Código de edificación, zonificación, loteos, subdivisiones, habilitaciones, vivienda",
+      "subcategories": [
+        {"nombre": "Vivienda Social", "slug": "vivienda-social", "descripcion": "Planes de vivienda, lotes sociales, regularización dominial"}
+      ]
+    },
+    {
+      "nombre": "Servicios Públicos",
+      "slug": "servicios-publicos",
+      "descripcion": "Alumbrado, saneamiento, recolección de residuos, agua, cloacas",
+      "subcategories": []
+    },
+    {
+      "nombre": "Salud Pública",
+      "slug": "salud-publica",
+      "descripcion": "Emergencias sanitarias, centros de atención primaria, regulaciones bromatológicas, habilitaciones sanitarias",
+      "subcategories": []
+    },
+    {
+      "nombre": "Educación, Ciencia y Tecnología",
+      "slug": "educacion-ciencia",
+      "descripcion": "Subsidios educativos, tecnología, modernización administrativa, gobierno digital",
+      "subcategories": [
+        {"nombre": "Educación Formal y Cooperadoras", "slug": "educacion-formal", "descripcion": "Escuelas, cooperadoras escolares, subsidios educativos"},
+        {"nombre": "Ciencia y Tecnología", "slug": "ciencia-tecnologia", "descripcion": "Investigación, innovación, parques tecnológicos"},
+        {"nombre": "Modernización y Gobierno Digital", "slug": "gobierno-digital", "descripcion": "Sistemas informáticos, RAFAM, expediente electrónico"}
+      ]
+    },
+    {
+      "nombre": "Cultura y Patrimonio",
+      "slug": "cultura-patrimonio",
+      "descripcion": "Patrimonio cultural, declaraciones de interés, actos conmemorativos, eventos",
+      "subcategories": []
+    },
+    {
+      "nombre": "Contratos y Convenios",
+      "slug": "contratos-convenios",
+      "descripcion": "Licitaciones, permutas, locaciones, compras, contratación de servicios",
+      "subcategories": [
+        {"nombre": "Licitaciones y Compras", "slug": "licitaciones-compras", "descripcion": "Licitaciones públicas, privadas, contrataciones directas"},
+        {"nombre": "Permutas y Ventas de Inmuebles", "slug": "permutas-ventas", "descripcion": "Enajenación de bienes municipales"},
+        {"nombre": "Locaciones y Alquileres", "slug": "locaciones-alquileres", "descripcion": "Contratos de alquiler de inmuebles"},
+        {"nombre": "Convenios Interinstitucionales", "slug": "convenios-inter", "descripcion": "Convenios con provincia, nación u otros organismos"}
+      ]
+    },
+    {
+      "nombre": "Tránsito y Transporte",
+      "slug": "transito-transporte",
+      "descripcion": "Regulación vial, estacionamiento, transporte público, licencias",
+      "subcategories": []
+    },
+    {
+      "nombre": "Seguridad y Orden Público",
+      "slug": "seguridad-orden-publico",
+      "descripcion": "Regulaciones de seguridad, defensa civil, emergencias",
+      "subcategories": []
+    },
+    {
+      "nombre": "Desarrollo Económico y Producción",
+      "slug": "desarrollo-economico",
+      "descripcion": "Promoción industrial, fomento agropecuario, regímenes de incentivo, comercio",
+      "subcategories": []
+    },
+    {
+      "nombre": "Medio Ambiente",
+      "slug": "medio-ambiente",
+      "descripcion": "Gestión ambiental, espacios verdes, arbolado, sustentabilidad",
+      "subcategories": []
+    },
+    {
+      "nombre": "Acción Social y Derechos",
+      "slug": "accion-social-derechos",
+      "descripcion": "Políticas sociales, niñez, discapacidad, género, adultos mayores, asistencia social",
+      "subcategories": [
+        {"nombre": "Niñez y Adolescencia", "slug": "ninez-adolescencia", "descripcion": "Protección de derechos del niño, programas de infancia"},
+        {"nombre": "Discapacidad y Accesibilidad", "slug": "discapacidad-accesibilidad", "descripcion": "Inclusión, accesibilidad urbana, transporte adaptado"},
+        {"nombre": "Género y Diversidad", "slug": "genero-diversidad", "descripcion": "Políticas de género, violencia de género, diversidad sexual"},
+        {"nombre": "Adultos Mayores", "slug": "adultos-mayores", "descripcion": "Programas para la tercera edad, geriátricos, jubilados"},
+        {"nombre": "Programas y Subsidios Sociales", "slug": "programas-subsidios", "descripcion": "Asistencia directa, becas, comedores, emergencia social"}
+      ]
+    },
+    {
+      "nombre": "Deportes y Recreación",
+      "slug": "deportes-recreacion",
+      "descripcion": "Clubes, eventos deportivos, espacios recreativos, subsidios deportivos",
+      "subcategories": []
+    },
+    {
+      "nombre": "Empleo y Relaciones Laborales",
+      "slug": "empleo-laboral",
+      "descripcion": "Regulaciones laborales locales, cooperativas de trabajo, economía social",
+      "subcategories": []
+    },
+    {
+      "nombre": "Procedimientos y Administración",
+      "slug": "procedimientos-admin",
+      "descripcion": "Adhesiones a leyes, convalidaciones de decretos, reglamentos internos, creación de organismos",
+      "subcategories": [
+        {"nombre": "Adhesiones a Leyes", "slug": "adhesiones-leyes", "descripcion": "Adhesión a leyes provinciales o nacionales"},
+        {"nombre": "Convalidación de Decretos", "slug": "convalidacion-decretos", "descripcion": "Ratificación de decretos del ejecutivo"},
+        {"nombre": "Creación de Organismos", "slug": "creacion-organismos", "descripcion": "Creación de direcciones, secretarías, comisiones"},
+        {"nombre": "Declaraciones de Interés", "slug": "declaraciones-interes", "descripcion": "Declaraciones de interés municipal o provincial"}
+      ]
+    }
+  ]
+}

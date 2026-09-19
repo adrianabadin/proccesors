@@ -1,0 +1,97 @@
+{
+  "benchmark_version": "1.0.0",
+  "snapshot_id": "sibom-eval-2026-09",
+  "description": "Conjunto de 10 casos de prueba para evaluación de calidad y latencia de búsqueda en SIBOM",
+  "cases": [
+    {
+      "id": "case-01-habitat",
+      "query": "habitat y vivienda social",
+      "tema": "habitat",
+      "categoria_esperada": "vivienda-social",
+      "tipo_esperado": "ordenanza",
+      "keywords_relevantes": ["vivienda", "habitat", "suelo", "loteo", "tierras"],
+      "proposito": "Búsqueda conceptual de planes de vivienda y banco de tierras"
+    },
+    {
+      "id": "case-02-ninez",
+      "query": "proteccion derechos ninez adolescencia",
+      "tema": "ninez",
+      "categoria_esperada": "ninez-adolescencia",
+      "tipo_esperado": "ordenanza",
+      "keywords_relevantes": ["ninez", "infancia", "adolescencia", "derechos", "servicio local"],
+      "proposito": "Protección integral de infancia y servicios locales"
+    },
+    {
+      "id": "case-03-salud",
+      "query": "atencion primaria salud caps insumos medicos",
+      "tema": "salud",
+      "categoria_esperada": "salud-publica",
+      "tipo_esperado": "todos",
+      "keywords_relevantes": ["salud", "caps", "hospital", "sanitario", "medicamentos"],
+      "proposito": "Equipamiento e insumos sanitarios para centros de salud"
+    },
+    {
+      "id": "case-04-tasas",
+      "query": "tasa alumbrado barrido limpieza exenciones",
+      "tema": "tributos",
+      "categoria_esperada": "tasas-serv-urbanos",
+      "tipo_esperado": "ordenanza",
+      "keywords_relevantes": ["tasa", "tributario", "exencion", "fiscal", "servicios urbanos"],
+      "proposito": "Régimen tributario y beneficios impositivos locales"
+    },
+    {
+      "id": "case-05-obras",
+      "query": "pavimentacion asfalto cordon cuneta desagues",
+      "tema": "obras",
+      "categoria_esperada": "pavimentacion-vialidad",
+      "tipo_esperado": "todos",
+      "keywords_relevantes": ["pavimento", "asfalto", "cuneta", "vial", "obra"],
+      "proposito": "Infraestructura vial y obras de pavimentación"
+    },
+    {
+      "id": "case-06-transito",
+      "query": "estacionamiento medido regulacion transito transporte",
+      "tema": "transito",
+      "categoria_esperada": "transito-transporte",
+      "tipo_esperado": "ordenanza",
+      "keywords_relevantes": ["transito", "estacionamiento", "vial", "vehiculos", "colectivo"],
+      "proposito": "Regulación de circulación, licencias y estacionamiento medido"
+    },
+    {
+      "id": "case-07-personal",
+      "query": "escalas salariales bonificaciones paritarias empleados municipales",
+      "tema": "personal",
+      "categoria_esperada": "escalas-salariales",
+      "tipo_esperado": "todos",
+      "keywords_relevantes": ["sueldo", "salario", "bonificacion", "empleado", "estatuto"],
+      "proposito": "Convenios salariales y aumentos de haberes del personal municipal"
+    },
+    {
+      "id": "case-08-convenios",
+      "query": "convenio marco cooperacion provincia nacion ministerio",
+      "tema": "convenios",
+      "categoria_esperada": "convenios-inter",
+      "tipo_esperado": "todos",
+      "keywords_relevantes": ["convenio", "acuerdo", "ministerio", "cooperacion", "provincia"],
+      "proposito": "Acuerdos interinstitucionales y convenios con otros niveles del Estado"
+    },
+    {
+      "id": "case-09-derogaciones",
+      "query": "derogase ordenanza modificase articulo vigencia",
+      "tema": "derogaciones",
+      "categoria_esperada": "procedimientos-admin",
+      "tipo_esperado": "ordenanza",
+      "keywords_relevantes": ["deroga", "modifica", "sustituye", "vigente"],
+      "proposito": "Detección de relaciones de modificación y derogación normativa"
+    },
+    {
+      "id": "case-10-comparacion",
+      "query": "banco de tierras inmuebles fiscales loteo social",
+      "tema": "banco de tierras",
+      "categoria_esperada": "vivienda-social",
+      "tipo_esperado": "ordenanza",
+      "keywords_relevantes": ["banco de tierras", "lotes", "fiscales", "inmuebles", "vivienda"],
+      "proposito": "Comparación intermunicipal de precedentes de tierras fiscales"
+    }
+  ]
+}

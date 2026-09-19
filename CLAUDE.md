@@ -57,5 +57,13 @@ interface Ordenanzas {
 ## Notes
 
 - TypeScript is configured with `es2022` target and `esnext` modules.
-- The `tsconfig.json` expects source in `src/` but current scripts live at the root — run with `tsx` directly rather than compiling.
+- The `tsconfig.json` expects source in `src/` but current scripts live at root — run with `tsx` directly rather than compiling.
 - The `undefined/` directory is a bug artifact from ordinances missing year data in their title.
+
+## Servidor MCP de Ordenanzas
+
+El proyecto incluye un servidor MCP compatible con OpenCode que proporciona 11 herramientas para consulta y análisis de ordenanzas.
+
+Para configurar, ver: `OPENCODE-MCP.md`
+
+Para uso automático, ver: `AGENTS.md`

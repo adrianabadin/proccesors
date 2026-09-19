@@ -1,24 +1,8 @@
 import { Pool } from "pg";
 import "dotenv/config";
-import pino from "pino";
+import { logger } from "./logger.js";
 
-/**
- * Configuración de logging
- */
 const isVerbose = process.env.VERBOSE === "true" || process.env.NODE_ENV === "development";
-
-export const logger = pino({
-  level: process.env.LOG_LEVEL || "info",
-  transport: isVerbose
-    ? {
-        target: "pino-pretty",
-        options: {
-          colorize: true,
-          translateTime: "SYS:standard",
-        },
-      }
-    : undefined,
-});
 
 /**
  * Connection pool a PostgreSQL
@@ -28,8 +12,16 @@ export const logger = pino({
  * - idleTimeoutMillis: 30s de inactividad antes de cerrar
  * - connectionTimeoutMillis: 5s para fallar rápido si hay problemas
  */
+const dbUrl = process.env.DATABASE_URL;
+if (dbUrl) {
+  const maskedUrl = dbUrl.replace(/:([^:@]+)@/, ':****@');
+  logger.info(`Conectando a base de datos: ${maskedUrl}`);
+} else {
+  logger.error("DATABASE_URL no definida");
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbUrl,
   ssl: false,
   max: 20,
   idleTimeoutMillis: 30000,

@@ -58,6 +58,7 @@ export async function searchOrdenanzasHandler(
       LEFT JOIN categorias c ON oc.categoria_id = c.id
       WHERE o.fts_documento @@ websearch_to_tsquery('espanol', $1)
         ${args.solo_vigentes ? "AND o.estado IN ('vigente', 'modificada')" : ""}
+      GROUP BY o.id, o.numero, o.anio, o.titulo, o.resumen, o.estado
       ORDER BY rank DESC
       LIMIT $2
     `, [args.query, args.limit]);
@@ -90,8 +91,8 @@ export async function searchOrdenanzasHandler(
     };
   } catch (error) {
     log.error(
-      { error: error instanceof Error ? error.message : String(error) },
-      "Search failed"
+      "Search failed",
+      { error: error instanceof Error ? error.message : String(error) }
     );
     return {
       content: [
@@ -131,7 +132,7 @@ export async function searchByCategoryHandler(
   const log = toolLogger("search_by_category");
 
   try {
-    log.info("Searching...", { query: args.query });
+    log.info("Searching...", { slug: args.slug });
 
     let whereClause = "c.slug = $1";
     const params: any[] = [args.slug];
@@ -141,6 +142,7 @@ export async function searchByCategoryHandler(
       params.push(args.anio);
     }
 
+    params.push(args.limit);
     const results = await query(`
       SELECT
         o.id,
@@ -163,8 +165,9 @@ export async function searchByCategoryHandler(
       JOIN ordenanza_categorias oc ON o.id = oc.ordenanza_id
       JOIN categorias c ON oc.categoria_id = c.id
       WHERE ${whereClause}
+      GROUP BY o.id, o.numero, o.anio, o.titulo, o.resumen, o.estado
       ORDER BY o.anio DESC, o.numero DESC
-      LIMIT $${params.length + 1}
+      LIMIT $${params.length}
     `, params);
 
     const formatted = results.map((row: any) => ({
@@ -177,7 +180,7 @@ export async function searchByCategoryHandler(
       categorias: row.categorias || [],
     }));
 
-    log.info({ count: formatted.length }, "Search completed");
+    log.info("Search completed", { count: formatted.length });
 
     return {
       content: [
@@ -194,8 +197,8 @@ export async function searchByCategoryHandler(
     };
   } catch (error) {
     log.error(
-      { error: error instanceof Error ? error.message : String(error) },
-      "Search failed"
+      "Search failed",
+      { error: error instanceof Error ? error.message : String(error) }
     );
     return {
       content: [
@@ -235,7 +238,7 @@ export async function searchByYearRangeHandler(
   const log = toolLogger("search_by_year_range");
 
   try {
-    log.info({ desde: args.desde, hasta: args.hasta }, "Searching...");
+    log.info("Searching...", { desde: args.desde, hasta: args.hasta });
 
     if (args.desde > args.hasta) {
       return {
@@ -273,6 +276,7 @@ export async function searchByYearRangeHandler(
       LEFT JOIN ordenanza_categorias oc ON o.id = oc.ordenanza_id
       LEFT JOIN categorias c ON oc.categoria_id = c.id
       WHERE o.anio BETWEEN $1 AND $2
+      GROUP BY o.id, o.numero, o.anio, o.titulo, o.resumen, o.estado
       ORDER BY o.anio DESC, o.numero DESC
       LIMIT $3
     `, [args.desde, args.hasta, args.limit]);
@@ -287,7 +291,7 @@ export async function searchByYearRangeHandler(
       categorias: row.categorias || [],
     }));
 
-    log.info({ count: formatted.length }, "Search completed");
+    log.info("Search completed", { count: formatted.length });
 
     return {
       content: [
@@ -303,8 +307,8 @@ export async function searchByYearRangeHandler(
     };
   } catch (error) {
     log.error(
-      { error: error instanceof Error ? error.message : String(error) },
-      "Search failed"
+      "Search failed",
+      { error: error instanceof Error ? error.message : String(error) }
     );
     return {
       content: [

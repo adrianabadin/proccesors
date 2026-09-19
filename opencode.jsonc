@@ -1,0 +1,44 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "ordenanzas-saladillo": {
+      "type": "local",
+      "command": ["npx", "tsx", "mcp-launcher.ts"],
+      "environment": {
+        "VERBOSE": "false",
+        "LOG_LEVEL": "info"
+      },
+      "enabled": true
+    },
+    "normas-gba": {
+      "type": "local",
+      "command": ["node", "mcp-server/index.js"],
+      "cwd": "../pba",
+      "environment": {
+        "MCP_BACKEND": "sqlite"
+      },
+      "enabled": true
+    },
+    "ia-local": {
+      "type": "local",
+      "command": ["npm", "run", "build"],
+      "environment": {
+        "OLLAMA_BASE_URL": "http://localhost:11434",
+        "OLLAMA_MODEL": "qwen3-uncensored-tools:latest",
+        "SKILL_DIRS": "~/.config/opencode/skills,~/.agents/skills"
+      },
+      "enabled": true
+    },
+    "sibom-mcp": {
+      "type": "local",
+      "command": ["python", "-m", "sibom_mcp"],
+      "cwd": "C:/Users/aabad/Documents/CODE/ordenanzas/sibom/mcp-server",
+      "environment": {
+        "SIBOM_DB_PATH": "C:/Users/aabad/Documents/CODE/ordenanzas/sibom/sibom.db",
+        "SIBOM_INDEX_DB_PATH": "C:/Users/aabad/Documents/CODE/ordenanzas/sibom/mcp-server/data/sibom-index.db",
+        "PYTHONPATH": "C:/Users/aabad/Documents/CODE/ordenanzas/sibom/mcp-server"
+      },
+      "enabled": true
+    }
+  }
+}

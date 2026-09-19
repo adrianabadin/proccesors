@@ -328,7 +328,12 @@ class DatabaseBatcher {
         }));
 
       if (catValues.length > 0) {
-        await tx.insert(ordenanzaCategorias).values(catValues).onConflictDoNothing();
+        try {
+          await tx.insert(ordenanzaCategorias).values(catValues).onConflictDoNothing();
+        } catch (catError) {
+          // Log error but don't fail the whole transaction
+          logVerbose(`Error inserting categorías para ${ordenanzaId}: ${catError}`);
+        }
       }
 
       // 5. INSERT referencias_normativas

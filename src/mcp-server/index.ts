@@ -1,4 +1,5 @@
-import { Server, StdioServerTransport } from "@modelcontextprotocol/sdk/server";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio";
 import "dotenv/config";
 import { closePool } from "./db.js";
 import { logger } from "./logger.js";
@@ -10,14 +11,14 @@ import { ALL_TOOLS } from "./tools/index.js";
 
 /**
  * Servidor MCP para el sistema de ordenanzas municipales de Saladillo.
- * 
+ *
  * Proporciona acceso a:
  * - 11 herramientas de consulta y análisis
  * - Búsqueda full-text con ranking
  * - Búsqueda semántica con embeddings
  * - Generación de resúmenes con IA
  * - Estadísticas de procesamiento
- * 
+ *
  * Características:
  * - Logging verboso configurable
  * - Error handling con mensajes amigables
@@ -25,42 +26,43 @@ import { ALL_TOOLS } from "./tools/index.js";
  * - Conexión a PostgreSQL con pool optimizado
  */
 
-const server = new Server(
-  {
-    name: "ordenanzas-saladillo",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {},
-  }
-);
+const server = new McpServer({
+  name: "ordenanzas-saladillo",
+  version: "1.0.0",
+});
 
 // =============================================================================
 // REGISTRO DE HERRAMIENTAS
 // =============================================================================
 
-logger.info("Iniciando servidor MCP de Ordenanzas...", {
-  tools_count: ALL_TOOLS.length,
-});
+logger.info({ tools_count: ALL_TOOLS.length }, "Iniciando servidor MCP de Ordenanzas...");
 
-for (const tool of ALL_TOOLS) {
+for (const { tool, handler } of ALL_TOOLS) {
   logger.debug(`Registrando herramienta: ${tool.name}...`);
-  server.setRequestHandler(tool.name, tool);
+  server.registerTool(
+    tool.name,
+    {
+      title: tool.title,
+      description: tool.description,
+      inputSchema: tool.inputSchema,
+    },
+    handler as any
+  );
 }
 
 // =============================================================================
 // HANDLERS DE NOTIFICACIONES
 // =============================================================================
 
-server.oninitialized(() => {
+server.server.oninitialized = () => {
   logger.info("Servidor MCP inicializado");
-});
+};
 
-server.onclose(async () => {
+server.server.onclose = async () => {
   logger.info("Cerrando conexión pool de base de datos...");
   await closePool();
   logger.info("Servidor MCP detenido");
-});
+};
 
 // =============================================================================
 // INICIO DEL SERVIDOR
@@ -78,8 +80,6 @@ async function main() {
 
 // Ejecutar servidor
 main().catch((error) => {
-  logger.error("Error fatal al iniciar servidor MCP", {
-    error: error instanceof Error ? error.message : String(error),
-  });
+  logger.error({ error: error instanceof Error ? error.message : String(error) }, "Error fatal al iniciar servidor MCP");
   process.exit(1);
 });

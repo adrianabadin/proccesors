@@ -6,7 +6,27 @@ dist/
 build/
 *.js.map
 *.d.ts.map
+.claude
+.lancedb
+.opencode
+.planning.playwright-mcp
+.pmc
+.playwright-mcp/
+.graphify_cached.json
+scratch/
+*.log
+~$*
+debug_snapshot.html
+page_sample.png
 
+# SIBOM data directories (scraped text and markdown)
+sibom/[0-9][0-9][0-9]-*/
+sibom/anexos/
+sibom/decretos/
+sibom/ordenanzas/
+sibom/_estado/
+sibom/.planning/
+sibom/.pmc/
 # ─── Secrets y configuración local ───────────────────────────
 .env
 .env.local
@@ -28,10 +48,19 @@ database/
 *.sql
 *.dump
 *.db
+*.db-wal
+*.db-shm
 *.sqlite
+*.sqlite-wal
+*.sqlite-shm
+__pycache__/
+*.pyc
 
 # ─── Archivos de prueba con API keys hardcodeadas ─────────────
 test-glm.ts
+test-db.ts
+mcp-launcher.ts
+mcp-launcher.log
 
 # ─── Artefactos de scraping / experimentos descartados ────────
 cosa.html
@@ -55,3 +84,18 @@ Thumbs.db
 bench-semantic.ts
 test-lancedb.ts
 docs/
+# PMC (Project Memory Context)
+.planning/project-memory-context/enrichment/
+.planning/project-memory-context/intake/
+.planning/project-memory-context/embedding-cache/
+.planning/project-memory-context/state/
+.planning/project-memory-context/install.json
+.planning/project-memory-context/graph/graph.db*
+.planning/project-memory-context/graph/*.html
+.planning/project-memory-context/graph/*.json
+.planning/project-memory-context/project-context/declared/
+.planning/project-memory-context/project-context/materialized/
+.planning/project-memory-context/project-context/state/
+.planning/project-memory-context/runs/*/*.json
+graphify-out/
+

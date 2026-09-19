@@ -51,21 +51,26 @@ const linksStr = links !== undefined ? Array.from(links).map(e=>({url:e.parentNo
 links?.forEach(ee=>console.log(ee.innerHTML))
 return linksStr
 }
-
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 async function getOrdenanza(link:OrdenanzaLink){
+  let cadena:string;
+  console.log("Obteniendo ordenanza "+link.titulo)
+ await sleep(Math.random() * 2000 + 1000);
 
-    const html=await (await fetch(link.url,  {
+  const html1= (await fetch(link.url,  {
       method: 'GET',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
         'Accept-Language': 'es-ES,es;q=0.9,en;q=0.8',
       },
-    })).text()
+    }))
+    const html = await html1.text()
 const document = new JSDOM(html).window.document
 const contenido= document.getElementById("content")
 const parrafos=contenido?.querySelectorAll("div > p")
-let cadena =link.titulo+"\n";
+ cadena =link.titulo+"\n";
 parrafos?.forEach(e=>cadena+="\n"+e.textContent)
+
 return cadena
 
     
