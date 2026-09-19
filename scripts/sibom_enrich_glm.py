@@ -237,9 +237,7 @@ def procesar_norma(norma_id: int, titulo: str, texto: str, municipio: str = "Sal
 
 
 def guardar_resultado(conn: sqlite3.Connection, norma_id: int, res: dict):
-    """Persiste en SQLite la extracción de forma atómica."""
-    cur = conn.cursor()
-
+    """Persiste en SQLite la extracción de forma atómica con reintentos en caso de lock."""
     summary_data = res.get("summary", {})
     trata = summary_data.get("trata")
     resuelve = summary_data.get("resuelve")
@@ -254,57 +252,68 @@ def guardar_resultado(conn: sqlite3.Connection, norma_id: int, res: dict):
         partes_resumen.append(f"Depende de: {depende}")
     summary_texto = " | ".join(partes_resumen) if partes_resumen else None
 
-    # 1. Actualizar norma
-    cur.execute("""
-        UPDATE normas
-        SET summary_trata = ?,
-            summary_resuelve = ?,
-            summary_depende = ?,
-            summary = ?,
-            procesado_llm = 1,
-            fecha_procesado_llm = datetime('now', 'localtime')
-        WHERE id = ?
-    """, (trata, resuelve, depende, summary_texto, norma_id))
-
-    # 2. Insertar artículos
     articulos = res.get("articulos", [])
-    if articulos:
-        cur.execute("DELETE FROM articulos WHERE norma_id = ?", (norma_id,))
-        for idx, art in enumerate(articulos, 1):
-            num_art = str(art.get("numero") or idx)
-            texto_art = art.get("texto") or ""
-            resumen_art = art.get("resumen")
-            cur.execute("""
-                INSERT OR REPLACE INTO articulos (norma_id, numero_articulo, orden, texto, resumen, estado)
-                VALUES (?, ?, ?, ?, ?, 'vigente')
-            """, (norma_id, num_art, idx, texto_art, resumen_art))
-
-    # 3. Insertar relaciones normativas
     relaciones = res.get("relaciones", [])
-    if relaciones:
-        cur.execute("DELETE FROM referencias_normativas WHERE norma_origen_id = ?", (norma_id,))
-        for rel in relaciones:
-            tipo_rel = rel.get("tipo") or "cita"
-            dest_tipo = rel.get("destino_tipo") or "otro"
-            dest_num = rel.get("destino_numero")
-            dest_anio = rel.get("destino_anio")
-            dest_ref = rel.get("destino_referencia")
-            art_afect = rel.get("articulos_afectados")
-            texto_cita = rel.get("texto_cita")
 
-            tipo_rel_valido = tipo_rel if tipo_rel in (
-                "deroga_total", "deroga_parcial", "modifica", "sustituye",
-                "prorroga", "convalida", "adhiere", "reglamenta", "cita"
-            ) else "cita"
-
+    for attempt in range(1, 20):
+        try:
+            cur = conn.cursor()
+            # 1. Actualizar norma
             cur.execute("""
-                INSERT INTO referencias_normativas (
-                    norma_origen_id, destino_tipo, destino_numero, destino_anio,
-                    destino_referencia, tipo_relacion, articulos_afectados, texto_cita
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (norma_id, dest_tipo, dest_num, dest_anio, dest_ref, tipo_rel_valido, art_afect, texto_cita))
+                UPDATE normas
+                SET summary_trata = ?,
+                    summary_resuelve = ?,
+                    summary_depende = ?,
+                    summary = ?,
+                    procesado_llm = 1,
+                    fecha_procesado_llm = datetime('now', 'localtime')
+                WHERE id = ?
+            """, (trata, resuelve, depende, summary_texto, norma_id))
 
-    conn.commit()
+            # 2. Insertar artículos
+            if articulos:
+                cur.execute("DELETE FROM articulos WHERE norma_id = ?", (norma_id,))
+                for idx, art in enumerate(articulos, 1):
+                    num_art = str(art.get("numero") or idx)
+                    texto_art = art.get("texto") or ""
+                    resumen_art = art.get("resumen")
+                    cur.execute("""
+                        INSERT OR REPLACE INTO articulos (norma_id, numero_articulo, orden, texto, resumen, estado)
+                        VALUES (?, ?, ?, ?, ?, 'vigente')
+                    """, (norma_id, num_art, idx, texto_art, resumen_art))
+
+            # 3. Insertar relaciones normativas
+            if relaciones:
+                cur.execute("DELETE FROM referencias_normativas WHERE norma_origen_id = ?", (norma_id,))
+                for rel in relaciones:
+                    tipo_rel = rel.get("tipo") or "cita"
+                    dest_tipo = rel.get("destino_tipo") or "otro"
+                    dest_num = rel.get("destino_numero")
+                    dest_anio = rel.get("destino_anio")
+                    dest_ref = rel.get("destino_referencia")
+                    art_afect = rel.get("articulos_afectados")
+                    texto_cita = rel.get("texto_cita")
+
+                    tipo_rel_valido = tipo_rel if tipo_rel in (
+                        "deroga_total", "deroga_parcial", "modifica", "sustituye",
+                        "prorroga", "convalida", "adhiere", "reglamenta", "cita"
+                    ) else "cita"
+
+                    cur.execute("""
+                        INSERT INTO referencias_normativas (
+                            norma_origen_id, destino_tipo, destino_numero, destino_anio,
+                            destino_referencia, tipo_relacion, articulos_afectados, texto_cita
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """, (norma_id, dest_tipo, dest_num, dest_anio, dest_ref, tipo_rel_valido, art_afect, texto_cita))
+
+            conn.commit()
+            return
+        except sqlite3.OperationalError as exc:
+            if ("locked" in str(exc).lower() or "busy" in str(exc).lower()) and attempt < 20:
+                time.sleep(0.5 * attempt)
+            else:
+                raise
+
 
 
 from scripts.sibom_municipios import (
@@ -444,12 +453,17 @@ def run_enrichment(tipo_filtro: str | None = None, municipio_filtro=None, limit:
                 print(f"[{i}/{total}] ok id={norma_id} ({n_arts} arts, {n_refs} relaciones)", flush=True)
             else:
                 fallos += 1
-                wcur = write_conn.cursor()
-                wcur.execute(
-                    "UPDATE normas SET procesado_llm = -1, notas_vigencia = ? WHERE id = ?",
-                    (f"ERROR GLM: {error}", norma_id)
-                )
-                write_conn.commit()
+                for attempt in range(1, 10):
+                    try:
+                        wcur = write_conn.cursor()
+                        wcur.execute(
+                            "UPDATE normas SET procesado_llm = -1, notas_vigencia = ? WHERE id = ?",
+                            (f"ERROR GLM: {error}", norma_id)
+                        )
+                        write_conn.commit()
+                        break
+                    except sqlite3.OperationalError:
+                        time.sleep(0.5 * attempt)
                 print(f"[{i}/{total}] ERROR id={norma_id}: {error}", flush=True)
 
     write_conn.close()

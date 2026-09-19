@@ -27,14 +27,26 @@ DEFAULT_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
 
 
 def get_model(model_name: str = DEFAULT_MODEL):
-    """Carga el modelo SentenceTransformer."""
+    """Carga el modelo SentenceTransformer priorizando cache local."""
     from sentence_transformers import SentenceTransformer
+    import time
+    
+    # 1. Intentar cargar directamente del cache local sin conexión a red
     try:
-        print(f"Cargando modelo de embeddings: {model_name}...")
-        return SentenceTransformer(model_name)
-    except Exception as exc:
-        print(f"Aviso: no se pudo cargar {model_name} ({exc}), usando 'all-MiniLM-L6-v2'...")
-        return SentenceTransformer("all-MiniLM-L6-v2")
+        return SentenceTransformer(model_name, local_files_only=True)
+    except Exception:
+        pass
+
+    # 2. Si no está en cache local, descargar con reintentos
+    for intento in range(1, 4):
+        try:
+            print(f"Cargando modelo de embeddings: {model_name} (intento {intento}/3)...")
+            return SentenceTransformer(model_name)
+        except Exception as exc:
+            if intento < 3:
+                time.sleep(3)
+            else:
+                raise RuntimeError(f"Error fatal cargando modelo {model_name}: {exc}") from exc
 
 
 def cmd_status(municipio_filtro=None):
