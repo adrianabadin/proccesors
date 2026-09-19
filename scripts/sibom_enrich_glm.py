@@ -155,7 +155,7 @@ def clean_json_response(raw_text: str) -> dict:
     return json.loads(txt, strict=False)
 
 
-def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model: str = DEFAULT_MODEL, retries: int = 3) -> dict:
+def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model: str = DEFAULT_MODEL, retries: int = 5) -> dict:
     """Llama a la API de BigModel GLM Flash con manejo de reintentos y fallback."""
     if not API_KEY:
         raise ValueError("No se encontró BIGMODEL_API_KEY en .env")
@@ -174,19 +174,23 @@ def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model:
     sys_prompt = get_system_prompt(municipio)
     prompt_user = f"Analizá la siguiente norma de {municipio}:\n\nTítulo: {titulo}\n\nTexto:\n{texto_input}"
 
-    current_model = model
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": prompt_user},
+        ],
+        "temperature": 0.1,
+        "max_tokens": 3072,
+    }
+
     last_err = None
+    current_model = model
 
     for attempt in range(1, retries + 1):
-        payload = {
-            "model": current_model,
-            "messages": [
-                {"role": "system", "content": sys_prompt},
-                {"role": "user", "content": prompt_user},
-            ],
-            "temperature": 0.1,
-            "max_tokens": 3072,
-        }
+        payload["model"] = current_model
+        if current_model.startswith("glm-4-flash") and "thinking" in payload:
+            del payload["thinking"]
 
         try:
             r = requests.post(BASE_URL, headers=headers, json=payload, timeout=(15, 75))
@@ -217,9 +221,12 @@ def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model:
             if current_model != "glm-4-flash":
                 current_model = "glm-4-flash"
             time.sleep(2.0 * attempt)
+        except requests.exceptions.RequestException as e:
+            last_err = f"Error de red/DNS en {current_model}: {e}"
+            time.sleep(4.0 * attempt)
         except Exception as e:
             last_err = str(e)
-            time.sleep(1.5 * attempt)
+            time.sleep(2.0 * attempt)
 
     raise RuntimeError(f"Fallo tras {retries} reintentos ({current_model}): {last_err}")
 

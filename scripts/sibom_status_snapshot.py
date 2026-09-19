@@ -17,10 +17,10 @@ def run():
     print(f"ARTICULOS ESTRUCTURADOS: {arts:,} | REFERENCIAS NORMATIVAS: {refs:,}")
     c.execute("SELECT procesado_llm, COUNT(1) FROM normas WHERE tipo='ordenanza' GROUP BY procesado_llm")
     print("DISTRIBUCION procesado_llm ORDENANZAS:", c.fetchall())
-    c.execute("SELECT notas_vigencia, COUNT(1) FROM normas WHERE tipo='ordenanza' AND procesado_llm = -1 GROUP BY SUBSTR(notas_vigencia, 1, 40) LIMIT 10")
-    print("TOP ERRORES EN -1:")
-    for r in c.fetchall():
-        print(f"  {r[1]}x: {r[0][:80] if r[0] else 'None'}")
+    c.execute("SELECT estado, COUNT(1) FROM normas GROUP BY estado")
+    print("ESTADOS NORMAS:", dict(c.fetchall()))
+    c.execute("SELECT estado, COUNT(1) FROM articulos GROUP BY estado")
+    print("ESTADOS ARTICULOS:", dict(c.fetchall()))
     conn.close()
 
 if __name__ == '__main__':

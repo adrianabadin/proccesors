@@ -49,10 +49,13 @@ def ciclo_ingesta(conn: sqlite3.Connection):
                 print(f"[{datetime.now().strftime('%H:%M:%S')}] OK [{cid}] {nombre}: {ins} normas incorporadas a sibom.db\n", flush=True)
                 nuevos_totales += ins
                 db_counts[cid] = total_db + ins
+                _ultimo_disco[cid] = total_disco
             except Exception as e:
                 print(f"[{datetime.now().strftime('%H:%M:%S')}] Error en auto-ingesta de [{cid}] {nombre}: {e}", flush=True)
-            finally:
-                _ultimo_disco[cid] = total_disco
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
 
     return nuevos_totales
 

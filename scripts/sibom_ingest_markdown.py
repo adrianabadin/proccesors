@@ -305,53 +305,61 @@ def ingestar_municipio(conn: sqlite3.Connection, valor_municipio, reemplazar: bo
         # Insertar por lotes de 1.000
         if len(normas_batch) >= 1000 or idx == total_archivos:
             if normas_batch:
-                insert_tuples = [item[0] for item in normas_batch]
-                cur.executemany("""
-                    INSERT INTO normas (
-                        tipo, numero, anio, numero_sibom, fecha, boletin, boletin_id, contenido_id,
-                        version, titulo, seccion_visto, seccion_considerando, texto_completo,
-                        estado, notas_vigencia, summary, summary_trata, summary_resuelve,
-                        summary_depende, embedding_summary, embedding_texto, tambien_en, url,
-                        archivo_md, localidad, codigo_localidad, procesado_llm, fecha_procesado_llm
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, insert_tuples)
+                for attempt in range(1, 20):
+                    try:
+                        insert_tuples = [item[0] for item in normas_batch]
+                        cur.executemany("""
+                            INSERT INTO normas (
+                                tipo, numero, anio, numero_sibom, fecha, boletin, boletin_id, contenido_id,
+                                version, titulo, seccion_visto, seccion_considerando, texto_completo,
+                                estado, notas_vigencia, summary, summary_trata, summary_resuelve,
+                                summary_depende, embedding_summary, embedding_texto, tambien_en, url,
+                                archivo_md, localidad, codigo_localidad, procesado_llm, fecha_procesado_llm
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """, insert_tuples)
 
-                # Mapear anexos
-                cids_batch = [item[1] for item in normas_batch if item[1] is not None]
-                placeholders = ",".join("?" * len(cids_batch))
-                cur.execute(f"SELECT id, contenido_id FROM normas WHERE contenido_id IN ({placeholders})", cids_batch)
-                cid_to_norma_id = dict(cur.fetchall())
+                        # Mapear anexos
+                        cids_batch = [item[1] for item in normas_batch if item[1] is not None]
+                        placeholders = ",".join("?" * len(cids_batch))
+                        cur.execute(f"SELECT id, contenido_id FROM normas WHERE contenido_id IN ({placeholders})", cids_batch)
+                        cid_to_norma_id = dict(cur.fetchall())
 
-                for item in normas_batch:
-                    c_id = item[1]
-                    norma_id = cid_to_norma_id.get(c_id)
-                    if not norma_id:
-                        continue
+                        for item in normas_batch:
+                            c_id = item[1]
+                            norma_id = cid_to_norma_id.get(c_id)
+                            if not norma_id:
+                                continue
 
-                    c_meta = contenidos_map.get(c_id, {})
-                    anexos_meta = c_meta.get("anexos") or []
+                            c_meta = contenidos_map.get(c_id, {})
+                            anexos_meta = c_meta.get("anexos") or []
 
-                    if anexos_meta:
-                        for a in anexos_meta:
-                            anexos_batch.append((
-                                norma_id,
-                                a.get("titulo") or "Anexo",
-                                a.get("anexo_id"),
-                                a.get("nombre_archivo"),
-                                a.get("url"),
-                                "pendiente",
-                            ))
+                            if anexos_meta:
+                                for a in anexos_meta:
+                                    anexos_batch.append((
+                                        norma_id,
+                                        a.get("titulo") or "Anexo",
+                                        a.get("anexo_id"),
+                                        a.get("nombre_archivo"),
+                                        a.get("url"),
+                                        "pendiente",
+                                    ))
 
-                if anexos_batch:
-                    cur.executemany("""
-                        INSERT INTO anexos (
-                            norma_id, titulo, anexo_sibom_id, archivo_pdf, url_descarga, estado_extraccion
-                        ) VALUES (?, ?, ?, ?, ?, ?)
-                    """, anexos_batch)
-                    anexos_batch.clear()
+                        if anexos_batch:
+                            cur.executemany("""
+                                INSERT INTO anexos (
+                                    norma_id, titulo, anexo_sibom_id, archivo_pdf, url_descarga, estado_extraccion
+                                ) VALUES (?, ?, ?, ?, ?, ?)
+                            """, anexos_batch)
+                            anexos_batch.clear()
 
-                conn.commit()
-                normas_batch.clear()
+                        conn.commit()
+                        normas_batch.clear()
+                        break
+                    except sqlite3.OperationalError as exc:
+                        if ("locked" in str(exc).lower() or "busy" in str(exc).lower()) and attempt < 20:
+                            time.sleep(0.5 * attempt)
+                        else:
+                            raise
 
     elapsed = time.time() - start_time
     insertadas = total_archivos - omitidos
