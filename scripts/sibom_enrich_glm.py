@@ -132,11 +132,14 @@ def clean_json_response(raw_text: str) -> dict:
     if start != -1:
         txt = txt[start:]
 
+    # Normalizar comas faltantes entre atributos JSON
+    txt = re.sub(r'([0-9"truefalsenull\]\}])\s*\n\s*("[a-zA-Z0-9_]+"\s*:)', r'\1,\n\2', txt)
+
     end = txt.rfind("}")
     if end != -1:
         txt_candidate = txt[: end + 1]
         try:
-            return json.loads(txt_candidate)
+            return json.loads(txt_candidate, strict=False)
         except Exception:
             pass
 
@@ -145,11 +148,11 @@ def clean_json_response(raw_text: str) -> dict:
         c = txt[:i].rstrip(", \n\r\t")
         for suffix in ["}", "]}", "]}}", '"}\n}', '"}\n]}']:
             try:
-                return json.loads(c + suffix)
+                return json.loads(c + suffix, strict=False)
             except Exception:
                 continue
 
-    return json.loads(txt)
+    return json.loads(txt, strict=False)
 
 
 def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model: str = DEFAULT_MODEL, retries: int = 3) -> dict:

@@ -32,6 +32,19 @@ def parse_articulos_afectados(texto_articulos: str | None) -> list[str]:
     return [m.strip().lower() for m in matches]
 
 
+def safe_exec(cur, conn, sql, params=()):
+    """Ejecuta una consulta SQL con reintentos progresivos en caso de contención de lock."""
+    import time
+    for attempt in range(1, 25):
+        try:
+            return cur.execute(sql, params)
+        except sqlite3.OperationalError as exc:
+            if ("locked" in str(exc).lower() or "busy" in str(exc).lower()) and attempt < 25:
+                time.sleep(0.5 * attempt)
+            else:
+                raise
+
+
 def reconcile_vigencia(db_path: Path = DB_PATH, municipio_filtro=None):
     conn = sqlite3.connect(db_path, timeout=60)
     conn.execute("PRAGMA busy_timeout = 60000")
@@ -45,7 +58,7 @@ def reconcile_vigencia(db_path: Path = DB_PATH, municipio_filtro=None):
     where_c = " AND no.codigo_localidad = ?" if mun_info else ""
     params_c = (mun_info["id"],) if mun_info else ()
 
-    cur.execute(f"""
+    safe_exec(cur, conn, f"""
         SELECT r.id, r.destino_tipo, r.destino_numero, r.destino_anio, no.codigo_localidad
         FROM referencias_normativas r
         JOIN normas no ON no.id = r.norma_origen_id
@@ -58,9 +71,9 @@ def reconcile_vigencia(db_path: Path = DB_PATH, municipio_filtro=None):
     print(f"Referencias pendientes de vincular a norma_destino_id: {len(pendientes_cruce)}")
 
     vinculadas = 0
-    for ref_id, dest_tipo, dest_num, dest_anio, cod_loc in pendientes_cruce:
+    for idx, (ref_id, dest_tipo, dest_num, dest_anio, cod_loc) in enumerate(pendientes_cruce, 1):
         # Buscar en normas locales del mismo municipio
-        cur.execute("""
+        safe_exec(cur, conn, """
             SELECT id FROM normas
             WHERE tipo = ? AND numero = ? AND anio = ? AND codigo_localidad = ?
             LIMIT 1
@@ -68,8 +81,10 @@ def reconcile_vigencia(db_path: Path = DB_PATH, municipio_filtro=None):
         dest_row = cur.fetchone()
         if dest_row:
             dest_id = dest_row[0]
-            cur.execute("UPDATE referencias_normativas SET norma_destino_id = ? WHERE id = ?", (dest_id, ref_id))
+            safe_exec(cur, conn, "UPDATE referencias_normativas SET norma_destino_id = ? WHERE id = ?", (dest_id, ref_id))
             vinculadas += 1
+        if idx % 50 == 0:
+            conn.commit()
 
     conn.commit()
     print(f"Referencias vinculadas a normas locales en base: {vinculadas}")
@@ -93,11 +108,11 @@ def reconcile_vigencia(db_path: Path = DB_PATH, municipio_filtro=None):
 
     report_rows = []
 
-    for r_id, orig_id, dest_id, tipo_rel, arts_afectados, texto_cita, o_tipo, o_num, o_anio in relaciones_impacto:
+    for idx, (r_id, orig_id, dest_id, tipo_rel, arts_afectados, texto_cita, o_tipo, o_num, o_anio) in enumerate(relaciones_impacto, 1):
         origen_label = f"{o_tipo.capitalize()} Nº {o_num}/{o_anio}"
 
         # Consultar norma destino
-        cur.execute("SELECT tipo, numero, anio, estado, notas_vigencia FROM normas WHERE id = ?", (dest_id,))
+        safe_exec(cur, conn, "SELECT tipo, numero, anio, estado, notas_vigencia FROM normas WHERE id = ?", (dest_id,))
         dest_row = cur.fetchone()
         if not dest_row:
             continue
@@ -108,17 +123,17 @@ def reconcile_vigencia(db_path: Path = DB_PATH, municipio_filtro=None):
         if tipo_rel == "deroga_total":
             nota = f"Derogada totalmente por {origen_label}"
             if not ya_notificada:
-                cur.execute("""
+                safe_exec(cur, conn, """
                     UPDATE normas
                     SET estado = 'derogada_total',
                         notas_vigencia = COALESCE(notas_vigencia || ' | ', '') || ?
                     WHERE id = ?
                 """, (nota, dest_id))
             else:
-                cur.execute("UPDATE normas SET estado = 'derogada_total' WHERE id = ?", (dest_id,))
+                safe_exec(cur, conn, "UPDATE normas SET estado = 'derogada_total' WHERE id = ?", (dest_id,))
 
             # Todos los artículos a derogado
-            cur.execute("""
+            safe_exec(cur, conn, """
                 UPDATE articulos
                 SET estado = 'derogado',
                     modificado_por_norma_id = ?
@@ -140,19 +155,19 @@ def reconcile_vigencia(db_path: Path = DB_PATH, municipio_filtro=None):
             # Solo actualizar a derogada_parcial si no está ya derogada_total
             if d_estado_prev != "derogada_total":
                 if not ya_notificada:
-                    cur.execute("""
+                    safe_exec(cur, conn, """
                         UPDATE normas
                         SET estado = 'derogada_parcial',
                             notas_vigencia = COALESCE(notas_vigencia || ' | ', '') || ?
                         WHERE id = ?
                     """, (nota, dest_id))
                 else:
-                    cur.execute("UPDATE normas SET estado = 'derogada_parcial' WHERE id = ?", (dest_id,))
+                    safe_exec(cur, conn, "UPDATE normas SET estado = 'derogada_parcial' WHERE id = ?", (dest_id,))
 
             # Artículos específicos a derogado
             nums_arts = parse_articulos_afectados(arts_afectados)
             for na in nums_arts:
-                cur.execute("""
+                safe_exec(cur, conn, """
                     UPDATE articulos
                     SET estado = 'derogado',
                         modificado_por_norma_id = ?
@@ -173,19 +188,19 @@ def reconcile_vigencia(db_path: Path = DB_PATH, municipio_filtro=None):
             nota = f"Modificada por {origen_label}"
             if d_estado_prev not in ("derogada_total", "derogada_parcial"):
                 if not ya_notificada:
-                    cur.execute("""
+                    safe_exec(cur, conn, """
                         UPDATE normas
                         SET estado = 'modificada',
                             notas_vigencia = COALESCE(notas_vigencia || ' | ', '') || ?
                         WHERE id = ?
                     """, (nota, dest_id))
                 else:
-                    cur.execute("UPDATE normas SET estado = 'modificada' WHERE id = ?", (dest_id,))
+                    safe_exec(cur, conn, "UPDATE normas SET estado = 'modificada' WHERE id = ?", (dest_id,))
 
             # Artículos específicos a modificado
             nums_arts = parse_articulos_afectados(arts_afectados)
             for na in nums_arts:
-                cur.execute("""
+                safe_exec(cur, conn, """
                     UPDATE articulos
                     SET estado = 'modificado',
                         modificado_por_norma_id = ?
@@ -201,6 +216,9 @@ def reconcile_vigencia(db_path: Path = DB_PATH, municipio_filtro=None):
                 "articulos": arts_afectados or "parcial",
                 "cita": texto_cita
             })
+
+        if idx % 50 == 0:
+            conn.commit()
 
     conn.commit()
 
