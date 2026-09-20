@@ -15,6 +15,7 @@ import argparse
 import concurrent.futures
 import json
 import os
+import random
 import re
 import sqlite3
 import sys
@@ -159,7 +160,7 @@ def clean_json_response(raw_text: str) -> dict:
     return json.loads(txt, strict=False)
 
 
-def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model: str = DEFAULT_MODEL, retries: int = 2) -> dict:
+def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model: str = DEFAULT_MODEL, retries: int = 4) -> dict:
     """Llama a la API de BigModel GLM Flash con manejo de reintentos y fallback."""
     if not API_KEY:
         raise ValueError("No se encontró BIGMODEL_API_KEY en .env")
@@ -216,7 +217,7 @@ def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model:
                     time.sleep(1.0)
                     continue
                 last_err = f"HTTP 429 (Rate limit): {err_data.get('message', 'congestión')}"
-                time.sleep(3.0 * attempt)
+                time.sleep(4.0 * attempt + random.uniform(1.0, 3.0))
             else:
                 last_err = f"HTTP {r.status_code}: {r.text[:200]}"
                 time.sleep(2.0 * attempt)
