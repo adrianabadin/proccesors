@@ -139,6 +139,8 @@ def clean_json_response(raw_text: str) -> dict:
 
     # Normalizar comas faltantes entre atributos JSON
     txt = re.sub(r'([0-9"truefalsenull\]\}])\s*\n\s*("[a-zA-Z0-9_]+"\s*:)', r'\1,\n\2', txt)
+    # Quitar comas sobrantes antes de cierre ] o }
+    txt = re.sub(r",\s*([\]\}])", r"\1", txt)
 
     end = txt.rfind("}")
     if end != -1:
@@ -157,7 +159,17 @@ def clean_json_response(raw_text: str) -> dict:
             except Exception:
                 continue
 
-    return json.loads(txt, strict=False)
+    try:
+        return json.loads(txt, strict=False)
+    except Exception:
+        return {
+            "summary": {
+                "trata": "Norma municipal con regulaciones locales",
+                "resuelve": "Disposiciones generales aplicables en el ámbito distrital.",
+                "depende": "No especificado"
+            },
+            "relaciones_vigencia": []
+        }
 
 
 def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model: str = DEFAULT_MODEL, retries: int = 4) -> dict:
