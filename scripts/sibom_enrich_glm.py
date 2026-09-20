@@ -192,13 +192,13 @@ def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model:
     last_err = None
     current_model = model
 
-    for attempt in range(1, retries + 1):
+    for attempt in range(1, 6):
         payload["model"] = current_model
         if current_model.startswith("glm-4-flash") and "thinking" in payload:
             del payload["thinking"]
 
         try:
-            r = requests.post(BASE_URL, headers=headers, json=payload, timeout=(10, 50))
+            r = requests.post(BASE_URL, headers=headers, json=payload, timeout=(15, 85))
             if r.status_code == 200:
                 data = r.json()
                 msg = data["choices"][0]["message"]
@@ -217,23 +217,23 @@ def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model:
                     time.sleep(1.0)
                     continue
                 last_err = f"HTTP 429 (Rate limit): {err_data.get('message', 'congestión')}"
-                time.sleep(4.0 * attempt + random.uniform(1.0, 3.0))
+                time.sleep(5.0 * attempt + random.uniform(2.0, 5.0))
             else:
                 last_err = f"HTTP {r.status_code}: {r.text[:200]}"
-                time.sleep(2.0 * attempt)
+                time.sleep(3.0 * attempt)
         except requests.exceptions.Timeout:
-            last_err = f"Timeout de lectura (>75s) en {current_model}"
+            last_err = f"Timeout de lectura (>85s) en {current_model}"
             if current_model != "glm-4-flash":
                 current_model = "glm-4-flash"
-            time.sleep(2.0 * attempt)
+            time.sleep(3.0 * attempt)
         except requests.exceptions.RequestException as e:
             last_err = f"Error de red/DNS en {current_model}: {e}"
-            time.sleep(4.0 * attempt)
+            time.sleep(5.0 * attempt)
         except Exception as e:
             last_err = str(e)
-            time.sleep(2.0 * attempt)
+            time.sleep(3.0 * attempt)
 
-    raise RuntimeError(f"Fallo tras {retries} reintentos ({current_model}): {last_err}")
+    raise RuntimeError(f"Fallo tras 5 reintentos ({current_model}): {last_err}")
 
 
 def procesar_norma(norma_id: int, titulo: str, texto: str, municipio: str = "Saladillo", model: str = DEFAULT_MODEL) -> tuple[int, dict | None, str | None]:
