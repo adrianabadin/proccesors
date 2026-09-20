@@ -278,22 +278,25 @@ def procesar_norma(norma_id: int, titulo: str, texto: str, municipio: str = "Sal
 
 def guardar_resultado(conn: sqlite3.Connection, norma_id: int, res: dict):
     """Persiste en SQLite la extracción de forma atómica con reintentos en caso de lock."""
-    summary_data = res.get("summary", {})
-    trata = summary_data.get("trata")
-    resuelve = summary_data.get("resuelve")
-    depende = summary_data.get("depende")
+    summary_data = res.get("summary")
+    if isinstance(summary_data, dict):
+        trata = summary_data.get("trata")
+        resuelve = summary_data.get("resuelve")
+        depende = summary_data.get("depende")
+    elif isinstance(summary_data, str):
+        trata = summary_data
+        resuelve = None
+        depende = None
+    else:
+        trata, resuelve, depende = None, None, None
 
-    partes_resumen = []
-    if trata:
-        partes_resumen.append(f"Trata sobre: {trata}")
-    if resuelve:
-        partes_resumen.append(f"Resuelve: {resuelve}")
-    if depende:
-        partes_resumen.append(f"Depende de: {depende}")
-    summary_texto = " | ".join(partes_resumen) if partes_resumen else None
-
-    articulos = res.get("articulos", [])
-    relaciones = res.get("relaciones", [])
+    summary_texto = "\n".join(filter(None, [trata, resuelve, depende])) or res.get("summary_texto") or (summary_data if isinstance(summary_data, str) else None)
+    articulos = res.get("articulos") or []
+    relaciones = res.get("relaciones") or []
+    if not isinstance(articulos, list):
+        articulos = []
+    if not isinstance(relaciones, list):
+        relaciones = []
 
     for attempt in range(1, 20):
         try:
@@ -314,6 +317,10 @@ def guardar_resultado(conn: sqlite3.Connection, norma_id: int, res: dict):
             if articulos:
                 cur.execute("DELETE FROM articulos WHERE norma_id = ?", (norma_id,))
                 for idx, art in enumerate(articulos, 1):
+                    if isinstance(art, str):
+                        art = {"numero": idx, "texto": art}
+                    elif not isinstance(art, dict):
+                        continue
                     num_art = str(art.get("numero") or idx)
                     texto_art = art.get("texto") or ""
                     resumen_art = art.get("resumen")
@@ -326,6 +333,10 @@ def guardar_resultado(conn: sqlite3.Connection, norma_id: int, res: dict):
             if relaciones:
                 cur.execute("DELETE FROM referencias_normativas WHERE norma_origen_id = ?", (norma_id,))
                 for rel in relaciones:
+                    if isinstance(rel, str):
+                        rel = {"tipo": "cita", "destino_referencia": rel}
+                    elif not isinstance(rel, dict):
+                        continue
                     tipo_rel = rel.get("tipo") or "cita"
                     dest_tipo = rel.get("destino_tipo") or "otro"
                     dest_num = rel.get("destino_numero")
@@ -486,11 +497,15 @@ def run_enrichment(tipo_filtro: str | None = None, municipio_filtro=None, limit:
         for i, future in enumerate(concurrent.futures.as_completed(futures), 1):
             norma_id, resultado, error = future.result()
             if resultado:
-                guardar_resultado(write_conn, norma_id, resultado)
-                exitos += 1
-                n_arts = len(resultado.get("articulos", []))
-                n_refs = len(resultado.get("relaciones", []))
-                print(f"[{i}/{total}] ok id={norma_id} ({n_arts} arts, {n_refs} relaciones)", flush=True)
+                try:
+                    guardar_resultado(write_conn, norma_id, resultado)
+                    exitos += 1
+                    n_arts = len(resultado.get("articulos", []))
+                    n_refs = len(resultado.get("relaciones", []))
+                    print(f"[{i}/{total}] ok id={norma_id} ({n_arts} arts, {n_refs} relaciones)", flush=True)
+                except Exception as save_err:
+                    fallos += 1
+                    print(f"[{i}/{total}] ERROR al guardar id={norma_id}: {save_err}", flush=True)
             else:
                 fallos += 1
                 for attempt in range(1, 10):
