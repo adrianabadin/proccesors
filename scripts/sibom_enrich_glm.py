@@ -229,7 +229,7 @@ def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model:
                     time.sleep(1.0)
                     continue
                 last_err = f"HTTP 429 (Rate limit): {err_data.get('message', 'congestión')}"
-                time.sleep(5.0 * attempt + random.uniform(2.0, 5.0))
+                time.sleep(8.0 * attempt + random.uniform(3.0, 7.0))
             else:
                 last_err = f"HTTP {r.status_code}: {r.text[:200]}"
                 time.sleep(3.0 * attempt)
@@ -237,7 +237,7 @@ def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model:
             last_err = f"Timeout de lectura (>85s) en {current_model}"
             if current_model != "glm-4-flash":
                 current_model = "glm-4-flash"
-            time.sleep(3.0 * attempt)
+            time.sleep(5.0 * attempt + random.uniform(2.0, 4.0))
         except requests.exceptions.RequestException as e:
             last_err = f"Error de red/DNS en {current_model}: {e}"
             time.sleep(5.0 * attempt)
