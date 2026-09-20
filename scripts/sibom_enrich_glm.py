@@ -182,11 +182,14 @@ def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model:
         "Content-Type": "application/json",
     }
 
+    # Limpiar frontmatter metadata de markdown si existe
+    texto_limpio = re.sub(r"^---\n[\s\S]*?\n---\n*", "", texto_norma).strip()
+
     # Optimizar contexto: Visto/Considerando (inicio) + cláusulas derogatorias (final)
-    if len(texto_norma) > 8000:
-        texto_input = texto_norma[:5000] + "\n\n[...artículos intermedios omitidos...]\n\n" + texto_norma[-2500:]
+    if len(texto_limpio) > 8000:
+        texto_input = texto_limpio[:5000] + "\n\n[...artículos intermedios omitidos...]\n\n" + texto_limpio[-2500:]
     else:
-        texto_input = texto_norma
+        texto_input = texto_limpio
 
     sys_prompt = get_system_prompt(municipio)
     prompt_user = f"Analizá la siguiente norma de {municipio}:\n\nTítulo: {titulo}\n\nTexto:\n{texto_input}"
@@ -198,7 +201,7 @@ def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model:
             {"role": "user", "content": prompt_user},
         ],
         "temperature": 0.1,
-        "max_tokens": 3072,
+        "max_tokens": 2048,
     }
 
     last_err = None
@@ -208,6 +211,16 @@ def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model:
         payload["model"] = current_model
         if current_model.startswith("glm-4-flash") and "thinking" in payload:
             del payload["thinking"]
+
+        # En intentos 3+, activar prompt de rescate ultracompacto para normas complejas
+        if attempt >= 3:
+            rescue_sys = 'Sos un analista legal. Respondé ÚNICAMENTE con un objeto JSON válido: {"summary": {"trata": "...", "resuelve": "...", "depende": "..."}, "relaciones": []}'
+            rescue_user = f"Analizá esta norma de {municipio}:\nTítulo: {titulo}\nTexto:\n{texto_limpio[:2800]}"
+            payload["messages"] = [
+                {"role": "system", "content": rescue_sys},
+                {"role": "user", "content": rescue_user}
+            ]
+            payload["max_tokens"] = 1024
 
         try:
             r = requests.post(BASE_URL, headers=headers, json=payload, timeout=(15, 85))
