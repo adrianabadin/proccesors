@@ -159,7 +159,7 @@ def clean_json_response(raw_text: str) -> dict:
     return json.loads(txt, strict=False)
 
 
-def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model: str = DEFAULT_MODEL, retries: int = 5) -> dict:
+def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model: str = DEFAULT_MODEL, retries: int = 2) -> dict:
     """Llama a la API de BigModel GLM Flash con manejo de reintentos y fallback."""
     if not API_KEY:
         raise ValueError("No se encontró BIGMODEL_API_KEY en .env")
@@ -197,7 +197,7 @@ def call_glm(texto_norma: str, titulo: str, municipio: str = "Saladillo", model:
             del payload["thinking"]
 
         try:
-            r = requests.post(BASE_URL, headers=headers, json=payload, timeout=(15, 75))
+            r = requests.post(BASE_URL, headers=headers, json=payload, timeout=(10, 50))
             if r.status_code == 200:
                 data = r.json()
                 msg = data["choices"][0]["message"]
