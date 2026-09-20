@@ -18,6 +18,10 @@ import os
 import re
 import sqlite3
 import sys
+if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 import time
 from datetime import datetime
 from pathlib import Path
@@ -474,7 +478,8 @@ def run_enrichment(tipo_filtro: str | None = None, municipio_filtro=None, limit:
                         break
                     except sqlite3.OperationalError:
                         time.sleep(0.5 * attempt)
-                print(f"[{i}/{total}] ERROR id={norma_id}: {error}", flush=True)
+                safe_err = str(error).encode("ascii", errors="replace").decode("ascii")
+                print(f"[{i}/{total}] ERROR id={norma_id}: {safe_err}", flush=True)
 
     write_conn.close()
 
